@@ -413,10 +413,15 @@ function loadSettings(){
     CMP_TABS=d.cmpTabs||{};
     GTEX_URL=d.gtexUrl||'';
     GTEX_KEY=d.gtexKey||'';
+    if(d.shopifyToken) _shopifyToken=d.shopifyToken;
   }catch(e){}
 }
 function saveSettings(){
-  localStorage.setItem('mndz_retail',JSON.stringify({targets:TARGETS,cmpSheets:CMP_SHEETS,cmpTabs:CMP_TABS,gtexUrl:GTEX_URL,gtexKey:GTEX_KEY}));
+  localStorage.setItem('mndz_retail',JSON.stringify({
+    targets:TARGETS,cmpSheets:CMP_SHEETS,cmpTabs:CMP_TABS,
+    gtexUrl:GTEX_URL,gtexKey:GTEX_KEY,
+    shopifyToken:_shopifyToken
+  }));
 }
 
 // ══ TABS ══
@@ -452,6 +457,7 @@ function switchTab(el){
   el.classList.add('active');
   const p=document.getElementById(el.dataset.pid);
   if(p)p.classList.add('active');
+  if(el.dataset.pid==='panel-cfg') setTimeout(populateSettingsFields,0);
 }
 
 // ══ PANELS ══
@@ -497,13 +503,11 @@ let _skuTitleMap   = {};   // sku → product title
 let _shopifyLoaded = false;
 const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
 const SHOPIFY_STORE  = 'mendeez.myshopify.com';
-const SHOPIFY_TOKEN  = '';  // Set in Settings
+let _shopifyToken = '';  // Loaded from localStorage — set in Settings
 
 async function loadShopifySkuMap(){
   if(_shopifyLoaded) return;
-  const token = SHOPIFY_TOKEN || (()=>{
-    try{ return JSON.parse(localStorage.getItem('mndz_retail')||'{}').shopifyToken||''; }catch(e){ return ''; }
-  })();
+  const token = _shopifyToken || '';
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
   let cursor = null;
@@ -805,7 +809,8 @@ function buildCfgHTML(){
       <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">G-Tech API Key</div>
         <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgKey" placeholder="Your API key" value="${GTEX_KEY}"></div>
       <div style="margin-top:12px"><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Admin Token (for product images)</div>
-        <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgShopifyToken" placeholder="shpat_xxxxxxxxxxxxxxxx" value="${SHOPIFY_TOKEN}"></div>
+        <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgShopifyToken" placeholder="shpat_xxxxxxxxxxxxxxxx" id="cfgShopifyToken">
+        <button class="btn btn-out btn-sm" style="margin-top:6px" onclick="tryLoadFromOpsDashboard()">↗ Load from Ops Dashboard</button></div>
     </div>
     <button class="btn btn-dark btn-sm" onclick="saveCfgApi()">Save API Settings</button>
     <div id="apiSaved" style="display:none;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g)">✓ Saved</div>
@@ -904,13 +909,35 @@ function saveTargets(){
   const atab=document.querySelector('.tab.active');
   if(atab)atab.click();
 }
+function tryLoadFromOpsDashboard(){
+  // Try to read token from ops dashboard localStorage (same browser)
+  try{
+    const cfg = JSON.parse(localStorage.getItem('mndz3_cfg')||'{}');
+    if(cfg.TOKEN){
+      document.getElementById('cfgShopifyToken').value = cfg.TOKEN;
+      alert('Token loaded from Ops Dashboard! Click Save API Settings to apply.');
+    } else {
+      alert('No token found in Ops Dashboard. Please enter manually.');
+    }
+  }catch(e){
+    alert('Could not load from Ops Dashboard. Please enter manually.');
+  }
+}
+
+function populateSettingsFields(){
+  const el = document.getElementById('cfgShopifyToken');
+  if(el && _shopifyToken) el.value = _shopifyToken;
+  const url = document.getElementById('cfgUrl');
+  if(url) url.value = GTEX_URL;
+  const key = document.getElementById('cfgKey');
+  if(key) key.value = GTEX_KEY;
+}
+
 function saveCfgApi(){
   GTEX_URL=document.getElementById('cfgUrl')?.value.trim()||'';
   GTEX_KEY=document.getElementById('cfgKey')?.value.trim()||'';
   const st=document.getElementById('cfgShopifyToken')?.value.trim()||'';
-  if(st){ const d=JSON.parse(localStorage.getItem('mndz_retail')||'{}'); d.shopifyToken=st; localStorage.setItem('mndz_retail',JSON.stringify(d)); }
-  _shopifyLoaded=false; // force reload
-  loadShopifySkuMap();
+  if(st){ _shopifyToken=st; _shopifyLoaded=false; loadShopifySkuMap(); }
   saveSettings();
   const el=document.getElementById('apiSaved');
   if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}

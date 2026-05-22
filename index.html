@@ -381,7 +381,17 @@ function doLogin(){
   loadSettings();
   buildTabs();
   buildPanels();
-  setTimeout(()=>{ const t=document.querySelector('.tab'); if(t)t.click(); },0);
+  setTimeout(()=>{
+    const t=document.querySelector('.tab'); if(t)t.click();
+    updateAllTaskLabels();
+    // Set default report period to today
+    const today=new Date().toISOString().slice(0,10);
+    const rf=document.getElementById('rptFrom');
+    const rt=document.getElementById('rptTo');
+    if(rf)rf.value=today;
+    if(rt)rt.value=today;
+    renderReport();
+  },0);
 }
 
 function doLogout(){
@@ -423,6 +433,7 @@ function buildTabs(){
   });
   if(_user.role==='asm'){
     [{text:'ASM Dashboard',pid:'panel-asm',cls:'asm-tab'},
+     {text:'📊 Reports',pid:'panel-rpt',cls:'asm-tab'},
      {text:'⚙ Settings',pid:'panel-cfg',cls:''}].forEach(({text,pid,cls})=>{
       const d=document.createElement('div');
       d.className='tab'+(cls?' '+cls:'');
@@ -458,6 +469,10 @@ function buildPanels(){
     da.className='panel'; da.id='panel-asm';
     da.innerHTML=buildAsmHTML();
     container.appendChild(da);
+    const dr=document.createElement('div');
+    dr.className='panel'; dr.id='panel-rpt';
+    dr.innerHTML=buildReportHTML();
+    container.appendChild(dr);
     const dc=document.createElement('div');
     dc.className='panel'; dc.id='panel-cfg';
     dc.innerHTML=buildCfgHTML();
@@ -483,7 +498,12 @@ function buildOutletHTML(o){
         <span class="mnth-badge">${new Date().toLocaleString('en-US',{month:'long',year:'numeric'})}</span>
       </div>
     </div>
-    <button class="btn btn-out btn-sm" onclick="refreshOutlet('${o.id}')">↻ Refresh</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-out btn-sm" onclick="openTask('${o.id}','${o.name}',false)" id="taskBtn_${o.id}" style="display:flex;align-items:center;gap:6px">
+        📋 <span id="taskBtnLbl_${o.id}">Daily Tasks</span>
+      </button>
+      <button class="btn btn-out btn-sm" onclick="refreshOutlet('${o.id}')">↻ Refresh</button>
+    </div>
   </div>
 
   <div class="datebar">
@@ -581,6 +601,11 @@ function buildAsmHTML(){
         <span class="atag red">🔴 5 active</span>
         <span class="atag green">✓ 18 solved</span>
       </div>
+      <button onclick="event.stopPropagation();openTask('${o.id}','${o.name}',true)" id="asmTaskBtn_${o.id}"
+        style="margin-top:10px;width:100%;background:#f8f8f8;border:1px solid #e0e0e0;color:#111;padding:7px;border-radius:6px;font-family:var(--mono);font-size:11px;cursor:pointer;text-align:left;transition:background .15s"
+        onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f8f8f8'">
+        📋 Tasks <span id="asmTaskLbl_${o.id}" style="font-weight:700;float:right">—</span>
+      </button>
     </div>`;
   }).join('');
 
@@ -1014,6 +1039,322 @@ function cmpRenderTable(){
     '</tr>';
   }).join('');
 }
+
+// ══════════════════════════════════════════════════
+// DAILY TASKS
+// ══════════════════════════════════════════════════
+let _taskOid=null,_taskIsAsm=false;
+const DEFAULT_TASKS=['Cleaning','Shelving','Stock arrangement','Window display','Staff attendance','Opening checklist','Cash counter check'];
+function getTKey(oid){return 'mndz_tasks_'+oid;}
+function getDKey(oid){return 'mndz_done_'+oid+'_'+new Date().toISOString().slice(0,10);}
+function loadTasks(oid){try{return JSON.parse(localStorage.getItem(getTKey(oid))||'null')||DEFAULT_TASKS.slice();}catch(e){return DEFAULT_TASKS.slice();}}
+function saveTasks(oid,tasks){localStorage.setItem(getTKey(oid),JSON.stringify(tasks));}
+function loadDone(oid){try{return JSON.parse(localStorage.getItem(getDKey(oid))||'{}');}catch(e){return {};}}
+function saveDone(oid,done){localStorage.setItem(getDKey(oid),JSON.stringify(done));}
+function getTaskSummary(oid){
+  const tasks=loadTasks(oid),done=loadDone(oid);
+  return{completed:tasks.filter(t=>done[t]).length,total:tasks.length};
+}
+function updateAllTaskLabels(){
+  OUTLETS.forEach(o=>{
+    const{completed,total}=getTaskSummary(o.id);
+    const l1=document.getElementById('taskBtnLbl_'+o.id);
+    const l2=document.getElementById('asmTaskLbl_'+o.id);
+    if(l1)l1.textContent=total>0?completed+'/'+total:'Daily Tasks';
+    if(l2)l2.textContent=total>0?completed+'/'+total:'—';
+  });
+}
+function openTask(oid,oname,isAsm){
+  _taskOid=oid;
+  _taskIsAsm=isAsm||(_user&&_user.role==='asm');
+  document.getElementById('taskTitle').textContent=oname+' — Daily Tasks';
+  document.getElementById('taskSubtitle').textContent=new Date().toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('addTaskWrap').style.display=_taskIsAsm?'block':'none';
+  document.getElementById('newTaskInput').value='';
+  const btn=document.getElementById('addTaskBtn');
+  btn.disabled=true;btn.style.opacity='.4';
+  renderTaskList();
+  document.getElementById('taskOverlay').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeTask(){
+  document.getElementById('taskOverlay').style.display='none';
+  document.body.style.overflow='';
+  updateAllTaskLabels();
+}
+function renderTaskList(){
+  const tasks=loadTasks(_taskOid),done=loadDone(_taskOid);
+  const completed=tasks.filter(t=>done[t]).length,total=tasks.length;
+  const pct=total>0?Math.round(completed/total*100):0;
+  document.getElementById('taskProgBar').style.width=pct+'%';
+  document.getElementById('taskProgTxt').textContent=completed+'/'+total;
+  if(!tasks.length){
+    document.getElementById('taskList').innerHTML='<div style="padding:20px;text-align:center;color:#999;font-family:var(--mono);font-size:12px">No tasks yet'+(_taskIsAsm?' — add one below':'')+'</div>';
+    return;
+  }
+  document.getElementById('taskList').innerHTML=tasks.map((task,i)=>{
+    const isDone=!!done[task];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f5f5f5;cursor:pointer" onclick="toggleTask('${task.replace(/'/g,"\\'").replace(/`/g,"\\`")}')">
+      <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isDone?'#1a9e5c':'#d0d0d0'};background:${isDone?'#1a9e5c':'#fff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s">
+        ${isDone?'<span style="color:#fff;font-size:13px;font-weight:700">✓</span>':''}
+      </div>
+      <span style="flex:1;font-size:13px;color:${isDone?'#999':'#111'};text-decoration:${isDone?'line-through':'none'}">${task}</span>
+      ${_taskIsAsm?`<button onclick="event.stopPropagation();deleteTask(${i})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:0;line-height:1">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+function toggleTask(task){
+  const done=loadDone(_taskOid);
+  done[task]=!done[task];
+  saveDone(_taskOid,done);
+  renderTaskList();
+}
+function deleteTask(idx){
+  if(!_taskIsAsm)return;
+  const tasks=loadTasks(_taskOid);
+  const task=tasks[idx];
+  if(!confirm('Delete task "'+task+'"?'))return;
+  tasks.splice(idx,1);
+  saveTasks(_taskOid,tasks);
+  const done=loadDone(_taskOid);
+  delete done[task];
+  saveDone(_taskOid,done);
+  renderTaskList();
+}
+function addTask(){
+  if(!_taskIsAsm)return;
+  const inp=document.getElementById('newTaskInput');
+  const val=inp.value.trim();
+  if(!val)return;
+  const tasks=loadTasks(_taskOid);
+  if(tasks.includes(val)){alert('Task already exists');return;}
+  tasks.push(val);
+  saveTasks(_taskOid,tasks);
+  inp.value='';
+  const btn=document.getElementById('addTaskBtn');
+  btn.disabled=true;btn.style.opacity='.4';
+  renderTaskList();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('newTaskInput');
+  if(inp)inp.addEventListener('input',()=>{
+    const btn=document.getElementById('addTaskBtn');
+    const has=!!inp.value.trim();
+    btn.disabled=!has;btn.style.opacity=has?'1':'.4';
+  });
+});
+
+// ══════════════════════════════════════════════════
+// REPORT TAB
+// ══════════════════════════════════════════════════
+function buildReportHTML(){
+  return `
+  <div class="out-hdr">
+    <div><div class="out-name">📊 Reports</div>
+      <div style="margin-top:4px"><span class="badge"><span class="pulse"></span> ASM View</span></div>
+    </div>
+    <button class="btn btn-dark btn-sm" onclick="generateReport()">⬇ Download Report</button>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><span class="dot" style="background:var(--bl)"></span>Report Filters</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div>
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Outlet</div>
+        <select id="rptOutlet" class="fi" style="width:100%" onchange="renderReport()">
+          <option value="all">All Outlets</option>
+          ${OUTLETS.map(o=>`<option value="${o.id}">${o.name}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Date From</div>
+        <input type="date" id="rptFrom" class="fi" style="width:100%" onchange="renderReport()">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Date To</div>
+        <input type="date" id="rptTo" class="fi" style="width:100%" onchange="renderReport()">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="dbtn active" onclick="setRptPeriod('today',this)">Today</button>
+      <button class="dbtn" onclick="setRptPeriod('week',this)">This Week</button>
+      <button class="dbtn" onclick="setRptPeriod('month',this)">This Month</button>
+      <button class="dbtn" onclick="setRptPeriod('custom',this)">Custom</button>
+    </div>
+  </div>
+  <div id="rptSummaryCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px"></div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--bl)"></span>Outlet Breakdown</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:var(--s)">
+            <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Outlet</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Target</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Net Sales</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Achievement</th>
+            <th style="padding:10px 14px;text-align:center;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Status</th>
+            <th style="padding:10px 14px;text-align:center;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Tasks</th>
+            <th style="padding:10px 14px;text-align:center;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b)">Complaints</th>
+          </tr>
+        </thead>
+        <tbody id="rptTableBody"></tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function setRptPeriod(period,btn){
+  document.querySelectorAll('.panel#panel-rpt .dbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const today=new Date(),fmt=d=>d.toISOString().slice(0,10);
+  if(period==='today'){
+    document.getElementById('rptFrom').value=fmt(today);
+    document.getElementById('rptTo').value=fmt(today);
+  }else if(period==='week'){
+    const mon=new Date(today);mon.setDate(today.getDate()-today.getDay()+1);
+    document.getElementById('rptFrom').value=fmt(mon);
+    document.getElementById('rptTo').value=fmt(today);
+  }else if(period==='month'){
+    document.getElementById('rptFrom').value=fmt(new Date(today.getFullYear(),today.getMonth(),1));
+    document.getElementById('rptTo').value=fmt(today);
+  }
+  renderReport();
+}
+
+function renderReport(){
+  const oid=document.getElementById('rptOutlet')?.value||'all';
+  const cm=new Date().toISOString().slice(0,7);
+  const outlets=oid==='all'?OUTLETS:OUTLETS.filter(o=>o.id===oid);
+  const rows=outlets.map(o=>{
+    const tgt=TARGETS[o.id+'_'+cm]||0,sale=DEMO_SALES[o.id]||0;
+    const pct=tgt>0?Math.round(sale/tgt*100):0;
+    const ts=getTaskSummary(o.id);
+    return{o,tgt,sale,pct,tasks:ts,complaints:{active:5,solved:18}};
+  });
+  const totSale=rows.reduce((s,r)=>s+r.sale,0);
+  const totTgt=rows.reduce((s,r)=>s+r.tgt,0);
+  const totPct=totTgt>0?Math.round(totSale/totTgt*100):0;
+  const totTasks=rows.reduce((s,r)=>s+r.tasks.completed,0)+'/'+rows.reduce((s,r)=>s+r.tasks.total,0);
+  const sc=document.getElementById('rptSummaryCards');
+  if(sc)sc.innerHTML=[
+    {lbl:'Total Net Sales',val:'PKR '+totSale.toLocaleString(),cls:'amber'},
+    {lbl:'Combined Target',val:'PKR '+totTgt.toLocaleString(),cls:'green'},
+    {lbl:'Overall Achievement',val:totPct+'%',cls:totPct>=100?'green':totPct>=70?'amber':'red'},
+    {lbl:'Tasks Completed',val:totTasks,cls:'blue'},
+  ].map(c=>`<div class="scard"><div class="scard-lbl">${c.lbl}</div><div class="scard-val ${c.cls}">${c.val}</div></div>`).join('');
+  const tb=document.getElementById('rptTableBody');
+  if(tb)tb.innerHTML=rows.map(r=>{
+    const pc=r.pct>=100?'var(--g)':r.pct>=70?'var(--or)':'var(--r)';
+    const st=r.pct>=100?'✅ On Target':r.pct>=70?'⚡ On Track':'⚠ Behind';
+    return `<tr onmouseover="this.style.background='var(--s)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);font-weight:600">${r.o.name}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right;font-family:var(--mono)">PKR ${r.tgt.toLocaleString()}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right;font-family:var(--mono);color:var(--or);font-weight:700">PKR ${r.sale.toLocaleString()}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right">
+        <span style="font-family:var(--mono);font-weight:700;color:${pc}">${r.pct}%</span>
+        <div style="height:4px;background:var(--s2);border-radius:2px;margin-top:4px;width:80px;margin-left:auto">
+          <div style="height:100%;background:${pc};border-radius:2px;width:${Math.min(r.pct,100)}%"></div></div>
+      </td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:center;font-size:12px">${st}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:center;font-family:var(--mono);color:${r.tasks.completed===r.tasks.total?'var(--g)':'var(--or)'}">${r.tasks.completed}/${r.tasks.total}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:center">
+        <span style="color:var(--r);font-family:var(--mono);font-size:11px">🔴 ${r.complaints.active}</span>
+        <span style="color:var(--g);font-family:var(--mono);font-size:11px;margin-left:6px">✓ ${r.complaints.solved}</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function generateReport(){
+  const oid=document.getElementById('rptOutlet')?.value||'all';
+  const from=document.getElementById('rptFrom')?.value||'—';
+  const to=document.getElementById('rptTo')?.value||'—';
+  const cm=new Date().toISOString().slice(0,7);
+  const outlets=oid==='all'?OUTLETS:OUTLETS.filter(o=>o.id===oid);
+  let totSale=0,totTgt=0;
+  let rows='';
+  outlets.forEach(o=>{
+    const tgt=TARGETS[o.id+'_'+cm]||0,sale=DEMO_SALES[o.id]||0;
+    const pct=tgt>0?Math.round(sale/tgt*100):0;
+    const{completed,total}=getTaskSummary(o.id);
+    const cls=pct>=100?'color:#1a9e5c':pct>=70?'color:#d97706':'color:#cc3333';
+    totSale+=sale;totTgt+=tgt;
+    rows+=`<tr><td><b>${o.name}</b></td><td>${tgt.toLocaleString()}</td><td>${sale.toLocaleString()}</td>
+    <td style="${cls};font-weight:700">${pct}%</td>
+    <td>${pct>=100?'✅ On Target':pct>=70?'⚡ On Track':'⚠ Behind'}</td>
+    <td>${completed}/${total}</td><td>5</td><td>18</td></tr>`;
+  });
+  const totPct=totTgt>0?Math.round(totSale/totTgt*100):0;
+  const html=`<html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,sans-serif;padding:30px;color:#111}
+    h1{font-size:22px;margin-bottom:4px}
+    .sub{font-size:12px;color:#666;margin-bottom:24px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#f0f0f0;padding:9px 12px;text-align:left;border:1px solid #ddd;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+    td{padding:9px 12px;border:1px solid #ddd}
+    .tot td{background:#f8f8f8;font-weight:700}
+    </style></head><body>
+    <h1>MENDEEZ Retail Report</h1>
+    <div class="sub">Period: ${from} → ${to} &nbsp;|&nbsp; Outlet: ${oid==='all'?'All Outlets':outlets[0]?.name||''} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString()}</div>
+    <table><thead><tr>
+      <th>Outlet</th><th>Target (PKR)</th><th>Net Sales (PKR)</th>
+      <th>Achievement</th><th>Status</th><th>Tasks</th><th>Active Complaints</th><th>Solved</th>
+    </tr></thead><tbody>${rows}
+    <tr class="tot"><td>TOTAL / ${outlets.length} outlets</td>
+    <td>${totTgt.toLocaleString()}</td><td>${totSale.toLocaleString()}</td>
+    <td style="${totPct>=100?'color:#1a9e5c':totPct>=70?'color:#d97706':'color:#cc3333'}">${totPct}%</td>
+    <td colspan="4"></td></tr>
+    </tbody></table></body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='mendeez_report_'+from+'_to_'+to+'.html';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
 </script>
+
+<!-- ══ TASK OVERLAY ══ -->
+<div id="taskOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15);margin:20px">
+    <!-- Header -->
+    <div style="padding:20px 22px 16px;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#111" id="taskTitle">Daily Tasks</div>
+        <div style="font-size:11px;color:#666;font-family:var(--mono);margin-top:2px" id="taskSubtitle"></div>
+      </div>
+      <button onclick="closeTask()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">✕</button>
+    </div>
+
+    <!-- Task progress -->
+    <div style="padding:14px 22px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:12px">
+      <div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">
+        <div id="taskProgBar" style="height:100%;background:#1a9e5c;border-radius:3px;transition:width .3s"></div>
+      </div>
+      <div style="font-size:12px;font-weight:700;font-family:var(--mono);color:#111;white-space:nowrap" id="taskProgTxt">0/0</div>
+    </div>
+
+    <!-- Task list -->
+    <div style="padding:8px 22px" id="taskList"></div>
+
+    <!-- Add task — ASM only -->
+    <div id="addTaskWrap" style="display:none;padding:14px 22px;border-top:1px solid #f0f0f0;background:#f8f8f8;border-radius:0 0 12px 12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:8px">Add New Task</div>
+      <div style="display:flex;gap:8px">
+        <input id="newTaskInput" type="text" placeholder="e.g. Stock arrangement, Window cleaning..."
+          style="flex:1;background:#fff;border:1px solid #d0d0d0;color:#111;padding:9px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none"
+          onkeydown="if(event.key==='Enter')addTask()"
+          oninput="document.getElementById('addTaskBtn').disabled=!this.value.trim()">
+        <button id="addTaskBtn" onclick="addTask()" disabled
+          style="background:#111;color:#fff;border:none;padding:9px 18px;border-radius:6px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;opacity:.4;transition:opacity .15s"
+          onmouseenter="if(!this.disabled)this.style.opacity='.8'" onmouseleave="if(!this.disabled)this.style.opacity='1'">
+          Add Task
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>

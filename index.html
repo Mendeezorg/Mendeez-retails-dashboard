@@ -1304,25 +1304,36 @@ function setRptPeriod(period,btn){
 }
 
 function renderReport(){
-  const oid=document.getElementById('rptOutlet')?.value||'all';
-  const cm=new Date().toISOString().slice(0,7);
-  const outlets=oid==='all'?OUTLETS:OUTLETS.filter(o=>o.id===oid);
-  const rows=outlets.map(o=>{
-    const tgt=TARGETS[o.id+'_'+cm]||0,sale=DEMO_SALES[o.id]||0;
-    const pct=tgt>0?Math.round(sale/tgt*100):0;
-    const ts=getTaskSummary(o.id);
-    return{o,tgt,sale,pct,tasks:ts,complaints:{active:5,solved:18}};
+  const oid     = document.getElementById('rptOutlet')?.value||'all';
+  const fromStr = document.getElementById('rptFrom')?.value;
+  const toStr   = document.getElementById('rptTo')?.value;
+
+  // Use end date for pro-rated target (or today if not set)
+  const toDate  = toStr ? new Date(toStr) : new Date();
+  const outlets = oid==='all' ? OUTLETS : OUTLETS.filter(o=>o.id===oid);
+
+  const rows = outlets.map(o=>{
+    // Pro-rated target based on selected end date
+    const td    = getProratedTarget(o.id, toDate.toISOString().slice(0,10));
+    const tgt   = td.prorated;      // pro-rated MTD target
+    const monthly = td.monthly;     // full month target
+    const sale  = DEMO_SALES[o.id]||0;
+    const pct   = tgt>0 ? Math.round(sale/tgt*100) : 0;
+    const ts    = getTaskSummary(o.id);
+    return{o, tgt, monthly, sale, pct, daysUsed:td.daysUsed, daysTotal:td.daysTotal, tasks:ts, complaints:{active:5,solved:18}};
   });
-  const totSale=rows.reduce((s,r)=>s+r.sale,0);
-  const totTgt=rows.reduce((s,r)=>s+r.tgt,0);
-  const totPct=totTgt>0?Math.round(totSale/totTgt*100):0;
-  const totTasks=rows.reduce((s,r)=>s+r.tasks.completed,0)+'/'+rows.reduce((s,r)=>s+r.tasks.total,0);
-  const sc=document.getElementById('rptSummaryCards');
+  const totSale    = rows.reduce((s,r)=>s+r.sale,0);
+  const totTgt     = rows.reduce((s,r)=>s+r.tgt,0);       // total prorated MTD target
+  const totMonthly = rows.reduce((s,r)=>s+r.monthly,0);   // total full month target
+  const totPct     = totTgt>0 ? Math.round(totSale/totTgt*100) : 0;
+  const totTasks   = rows.reduce((s,r)=>s+r.tasks.completed,0)+'/'+rows.reduce((s,r)=>s+r.tasks.total,0);
+  const dateLabel  = fromStr&&toStr ? fromStr+' → '+toStr : toStr ? 'Up to '+toStr : 'MTD';
+  const sc = document.getElementById('rptSummaryCards');
   if(sc)sc.innerHTML=[
-    {lbl:'Total Net Sales',val:'PKR '+totSale.toLocaleString(),cls:'amber'},
-    {lbl:'Combined Target',val:'PKR '+totTgt.toLocaleString(),cls:'green'},
-    {lbl:'Overall Achievement',val:totPct+'%',cls:totPct>=100?'green':totPct>=70?'amber':'red'},
-    {lbl:'Tasks Completed',val:totTasks,cls:'blue'},
+    {lbl:'Total Net Sales',        val:'PKR '+totSale.toLocaleString(),    cls:'amber'},
+    {lbl:'MTD Target ('+dateLabel+')', val:'PKR '+totTgt.toLocaleString(),  cls:'green'},
+    {lbl:'Overall Achievement',    val:totPct+'%',                         cls:totPct>=100?'green':totPct>=70?'amber':'red'},
+    {lbl:'Tasks Completed',        val:totTasks,                           cls:'blue'},
   ].map(c=>`<div class="scard"><div class="scard-lbl">${c.lbl}</div><div class="scard-val ${c.cls}">${c.val}</div></div>`).join('');
   const tb=document.getElementById('rptTableBody');
   if(tb)tb.innerHTML=rows.map(r=>{
@@ -1330,7 +1341,10 @@ function renderReport(){
     const st=r.pct>=100?'✅ On Target':r.pct>=70?'⚡ On Track':'⚠ Behind';
     return `<tr onmouseover="this.style.background='var(--s)'" onmouseout="this.style.background=''">
       <td style="padding:10px 14px;border-bottom:1px solid var(--b);font-weight:600">${r.o.name}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right;font-family:var(--mono)">PKR ${r.tgt.toLocaleString()}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right;font-family:var(--mono)">
+        PKR ${r.tgt.toLocaleString()}
+        <div style="font-size:10px;color:var(--m);margin-top:2px">${r.daysUsed}/${r.daysTotal} days · PKR ${r.monthly.toLocaleString()} monthly</div>
+      </td>
       <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right;font-family:var(--mono);color:var(--or);font-weight:700">PKR ${r.sale.toLocaleString()}</td>
       <td style="padding:10px 14px;border-bottom:1px solid var(--b);text-align:right">
         <span style="font-family:var(--mono);font-weight:700;color:${pc}">${r.pct}%</span>
@@ -1355,8 +1369,10 @@ function generateReport(){
   const outlets=oid==='all'?OUTLETS:OUTLETS.filter(o=>o.id===oid);
   let totSale=0,totTgt=0;
   let rows='';
+  const toDateStr2 = to!=='—' ? to : new Date().toISOString().slice(0,10);
   outlets.forEach(o=>{
-    const tgt=TARGETS[o.id+'_'+cm]||0,sale=DEMO_SALES[o.id]||0;
+    const td3=getProratedTarget(o.id, toDateStr2);
+    const tgt=td3.prorated,sale=DEMO_SALES[o.id]||0;
     const pct=tgt>0?Math.round(sale/tgt*100):0;
     const{completed,total}=getTaskSummary(o.id);
     const cls=pct>=100?'color:#1a9e5c':pct>=70?'color:#d97706':'color:#cc3333';

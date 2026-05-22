@@ -192,8 +192,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100v
     <div class="lsub">Retail Operations Dashboard</div>
     <input id="lu" class="linput" type="text" placeholder="Username"
       onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
-    <input id="lp" class="linput" type="password" placeholder="Password"
-      onkeydown="if(event.key==='Enter')doLogin()" oninput="document.getElementById('lerr').textContent=''">
+    <div style="position:relative;margin-bottom:10px">
+      <input id="lp" class="linput" type="password" placeholder="Password"
+        style="margin-bottom:0;padding-right:40px"
+        onkeydown="if(event.key==='Enter')doLogin()" oninput="document.getElementById('lerr').textContent=''">
+      <button type="button" onclick="togglePwd()" id="eyeBtn"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#999;font-size:16px;padding:0;line-height:1">
+        👁
+      </button>
+    </div>
     <div id="lerr" class="lerr"></div>
     <button class="lbtn" onclick="doLogin()">Sign In</button>
     <div class="lforgot" onclick="alert('To reset your password contact:\nsupport@mendeez.com')">Forgot password?</div>
@@ -349,6 +356,18 @@ let _cmpLastRows   = [];
 let _cmpLastHdrs   = [];
 
 // ══ LOGIN ══
+function togglePwd(){
+  const inp = document.getElementById('lp');
+  const btn = document.getElementById('eyeBtn');
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    btn.style.color = '#111';
+  } else {
+    inp.type = 'password';
+    btn.style.color = '#999';
+  }
+}
+
 function doLogin(){
   const u = document.getElementById('lu').value.trim();
   const p = document.getElementById('lp').value.trim();

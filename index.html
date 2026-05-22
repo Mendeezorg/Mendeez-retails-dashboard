@@ -481,14 +481,34 @@ function buildPanels(){
 }
 
 // ══ OUTLET PANEL ══
+
+// ══════════════════════════════════════════════════
+// PRO-RATED TARGET
+// Monthly target ÷ days in month × end date day
+// ══════════════════════════════════════════════════
+function getProratedTarget(oid, toDateStr){
+  const toDate     = toDateStr ? new Date(toDateStr) : new Date();
+  const yearMon    = toDate.toISOString().slice(0,7);
+  const monthly    = TARGETS[oid+'_'+yearMon] || 0;
+  if(!monthly) return {monthly:0,prorated:0,daily:0,daysUsed:0,daysTotal:0,yearMon};
+  const daysTotal  = new Date(toDate.getFullYear(), toDate.getMonth()+1, 0).getDate();
+  const daysUsed   = toDate.getDate();
+  const daily      = monthly / daysTotal;
+  const prorated   = Math.round(daily * daysUsed);
+  return {monthly, prorated, daily:Math.round(daily), daysUsed, daysTotal, yearMon};
+}
+
 function buildOutletHTML(o){
-  const cm=new Date().toISOString().slice(0,7);
-  const tgt=TARGETS[o.id+'_'+cm]||0;
-  const sale=DEMO_SALES[o.id]||0;
-  const pct=tgt>0?Math.round(sale/tgt*100):0;
-  const pc=pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
-  const fillW=Math.min(pct,100);
-  const pilCls=pct>=100?'green':pct>=70?'amber':'red';
+  const today    = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const tgtData  = getProratedTarget(o.id, todayStr);
+  const tgt      = tgtData.prorated;       // pro-rated target by today
+  const monthly  = tgtData.monthly;        // full month target
+  const sale     = DEMO_SALES[o.id] || 0;
+  const pct      = tgt>0 ? Math.round(sale/tgt*100) : 0;
+  const pc       = pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
+  const fillW    = Math.min(pct,100);
+  const pilCls   = pct>=100?'green':pct>=70?'amber':'red';
   return `
   <div class="out-hdr">
     <div>
@@ -526,20 +546,21 @@ function buildOutletHTML(o){
       <div class="card-title"><span class="dot" style="background:var(--or)"></span>Target vs Achievement</div>
       <div class="tva-row">
         <div>
-          <div class="tva-lbl">Monthly Target</div>
-          <div class="tva-val amber">PKR ${fmt(tgt)}</div>
+          <div class="tva-lbl" id="tgtLbl_${o.id}">MTD Target (${tgtData.daysUsed}/${tgtData.daysTotal} days)</div>
+          <div class="tva-val amber" id="tgtVal_${o.id}">PKR ${fmt(tgt)}</div>
+          <div style="font-size:10px;font-family:var(--mono);color:var(--m);margin-top:2px" id="mthVal_${o.id}">Monthly: PKR ${fmt(monthly)}</div>
         </div>
         <div>
-          <div class="tva-lbl">Net Sales</div>
+          <div class="tva-lbl">Net Sales MTD</div>
           <div class="tva-val green">PKR ${fmt(sale)}</div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--m);margin-bottom:5px">
         <span>Achievement</span>
-        <span class="pct-pill ${pilCls}" style="background:${pc}20;color:${pc}">${pct}%</span>
+        <span class="pct-pill ${pilCls}" id="pct_${o.id}" style="background:${pc}20;color:${pc}">${pct}%</span>
       </div>
-      <div class="prog-bg"><div class="prog-fill" style="width:${fillW}%;background:${pc}"></div></div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--m);margin-top:6px">
+      <div class="prog-bg"><div class="prog-fill" id="prog_${o.id}" style="width:${fillW}%;background:${pc}"></div></div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--m);margin-top:6px" id="st_${o.id}">
         ${pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'}
       </div>
     </div>
@@ -588,14 +609,15 @@ function buildOutletHTML(o){
 function buildAsmHTML(){
   const cm=new Date().toISOString().slice(0,7);
   const cards=OUTLETS.map(o=>{
-    const tgt=TARGETS[o.id+'_'+cm]||0;
-    const sale=DEMO_SALES[o.id]||0;
-    const pct=tgt>0?Math.round(sale/tgt*100):0;
+    const td2   = getProratedTarget(o.id, new Date().toISOString().slice(0,10));
+    const tgt   = td2.prorated;
+    const sale  = DEMO_SALES[o.id]||0;
+    const pct   = tgt>0?Math.round(sale/tgt*100):0;
     const fc=pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
     return `<div class="acard" onclick="goOutlet('${o.id}')">
       <div class="acard-name">${o.name}</div>
       <div class="acard-sale">PKR ${fmt(sale)}</div>
-      <div class="acard-tgt">Target: PKR ${fmt(tgt)} · ${pct}%</div>
+      <div class="acard-tgt">MTD Target: PKR ${fmt(tgt)} · ${pct}% (of PKR ${fmt(td2.monthly)} monthly)</div>
       <div class="acard-bar"><div class="acard-fill" style="width:${Math.min(pct,100)}%;background:${fc}"></div></div>
       <div class="acard-tags">
         <span class="atag red">🔴 5 active</span>
@@ -719,6 +741,45 @@ function setRange(btn,range,oid){
   btn.classList.add('active');
   const cr=document.getElementById('customR_'+oid);
   if(cr)cr.style.display=range==='custom'?'flex':'none';
+
+  // Calculate end date for this range
+  const today=new Date();
+  let toDate=today;
+  if(range==='today')      toDate=today;
+  else if(range==='week')  toDate=today;
+  else if(range==='month') toDate=today;  // full month = last day selected = today
+  updateOutletTarget(oid, toDate.toISOString().slice(0,10));
+}
+
+function applyRange(oid){
+  const f=document.getElementById('df_'+oid)?.value;
+  const t=document.getElementById('dt_'+oid)?.value;
+  if(!f||!t){alert('Select both dates');return;}
+  updateOutletTarget(oid, t);
+}
+
+function updateOutletTarget(oid, toDateStr){
+  const td = getProratedTarget(oid, toDateStr);
+  const tgtEl  = document.getElementById('tgtVal_'+oid);
+  const mthEl  = document.getElementById('mthVal_'+oid);
+  const lblEl  = document.getElementById('tgtLbl_'+oid);
+  const pctEl  = document.getElementById('pct_'+oid);
+  const progEl = document.getElementById('prog_'+oid);
+  const stEl   = document.getElementById('st_'+oid);
+  const sale   = DEMO_SALES[oid]||0;
+
+  if(!tgtEl) return;
+
+  tgtEl.textContent = 'PKR '+fmt(td.prorated);
+  if(mthEl) mthEl.textContent = 'Monthly: PKR '+fmt(td.monthly);
+  if(lblEl) lblEl.textContent = 'MTD Target ('+td.daysUsed+'/'+td.daysTotal+' days)';
+
+  const pct = td.prorated>0 ? Math.round(sale/td.prorated*100) : 0;
+  const pc  = pct>=100?'#1a9e5c':pct>=70?'#d97706':'#cc3333';
+
+  if(pctEl){ pctEl.textContent=pct+'%'; pctEl.style.color=pc; pctEl.style.background=pc+'20'; }
+  if(progEl){ progEl.style.width=Math.min(pct,100)+'%'; progEl.style.background=pc; }
+  if(stEl){ stEl.textContent=pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'; }
 }
 function applyRange(oid){
   const f=document.getElementById('df_'+oid)?.value;

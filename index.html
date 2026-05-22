@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mendeez Retail Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--s:#f8f8f8;--s2:#f0f0f0;
+  --b:#e0e0e0;--b2:#d0d0d0;
+  --t:#111;--m:#666;--m2:#999;
+  --a:#111;
+  --g:#1a9e5c;--gd:#e8f8f0;
+  --r:#cc3333;--rd:#fdf0f0;
+  --bl:#2563eb;--bld:#eff6ff;
+  --or:#d97706;--ord:#fff7ed;
+  --mono:'DM Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100vh;font-size:14px}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:#f5f5f5;z-index:9999;display:flex;align-items:center;justify-content:center}
+.lbox{background:#fff;border:1px solid var(--b);border-radius:12px;padding:44px 48px;width:100%;max-width:400px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.llogo{font-size:26px;font-weight:800;color:#111;letter-spacing:.1em;margin-bottom:4px}
+.lsub{font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:32px}
+.linput{width:100%;background:var(--s);border:1px solid var(--b);color:var(--t);padding:11px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;margin-bottom:10px}
+.linput:focus{border-color:#111}
+.linput::placeholder{color:var(--m2)}
+.lbtn{width:100%;background:#111;color:#fff;border:none;padding:12px;border-radius:7px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .15s}
+.lbtn:hover{opacity:.85}
+.lerr{color:var(--r);font-size:11px;font-family:var(--mono);min-height:18px;margin-bottom:6px}
+.lforgot{font-size:11px;color:var(--m);font-family:var(--mono);margin-top:14px;cursor:pointer;text-decoration:underline}
+
+/* TOPBAR */
+.topbar{height:52px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#fff;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.tlogo{font-size:13px;font-weight:800;letter-spacing:.08em;color:#111}
+.tlogo span{color:var(--m);font-size:10px;font-weight:400;margin-left:6px;font-family:var(--mono)}
+.tright{display:flex;align-items:center;gap:10px}
+.tuser{font-size:11px;font-family:var(--mono);color:var(--m)}
+.trole{font-size:10px;font-family:var(--mono);color:#fff;background:#111;padding:2px 8px;border-radius:4px}
+.tlout{background:none;border:1px solid var(--b);color:var(--m);padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-family:var(--mono)}
+.tlout:hover{border-color:var(--r);color:var(--r)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--b);background:#fff;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 16px;font-size:11px;font-weight:700;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;letter-spacing:.04em;text-transform:uppercase;font-family:var(--mono)}
+.tab:hover{color:#111}
+.tab.active{color:#111;border-bottom-color:#111}
+.tab.asm-tab{color:var(--bl)}
+.tab.asm-tab.active{color:var(--bl);border-bottom-color:var(--bl)}
+
+/* PANELS */
+.panel{display:none;padding:20px 22px;max-width:1400px}
+.panel.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--b);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#444;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+/* SUMMARY CARDS ROW */
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.scard{background:#fff;border:1px solid var(--b);border-radius:10px;padding:16px 18px}
+.scard-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--m);margin-bottom:8px}
+.scard-val{font-size:28px;font-weight:700;font-family:var(--mono)}
+.scard-val.red{color:var(--r)}
+.scard-val.green{color:var(--g)}
+.scard-val.amber{color:var(--or)}
+.scard-val.blue{color:var(--bl)}
+
+/* NATURE CARDS */
+.nature-section{background:#fff;border:1px solid var(--b);border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.nature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.nat-card{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:14px;cursor:pointer;transition:border-color .15s}
+.nat-card:hover{border-color:#111}
+.nat-name{font-size:11px;font-weight:600;color:#111;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nat-count{font-size:24px;font-weight:700;font-family:var(--mono);margin-bottom:2px}
+.nat-pct{font-size:10px;color:var(--m);font-family:var(--mono)}
+
+/* TARGET CARD */
+.tva-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.tva-lbl{font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.tva-val{font-size:22px;font-weight:700;font-family:var(--mono);color:#111}
+.tva-val.green{color:var(--g)}
+.tva-val.amber{color:var(--or)}
+.prog-bg{height:8px;background:var(--s2);border-radius:4px;overflow:hidden;margin:8px 0}
+.prog-fill{height:100%;border-radius:4px;transition:width .6s}
+.pct-pill{display:inline-flex;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:700;font-family:var(--mono)}
+
+/* COMPLAINT BUTTON AREA */
+.cmp-area{background:#fff;border:1px solid var(--b);border-radius:10px;padding:18px 20px}
+.cmp-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.cmp-mini{background:var(--s);border:1px solid var(--b);border-radius:7px;padding:12px;text-align:center}
+.cmp-mini-val{font-size:22px;font-weight:700;font-family:var(--mono);margin-bottom:3px}
+.cmp-btn{width:100%;background:var(--rd);border:1px solid var(--r);color:var(--r);padding:10px;border-radius:7px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.cmp-btn:hover{background:var(--r);color:#fff}
+
+/* MAIN 2-COL */
+.main2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.main2{grid-template-columns:1fr}}
+
+/* DATE BAR */
+.datebar{display:flex;align-items:center;gap:8px;background:var(--s);border:1px solid var(--b);border-radius:8px;padding:10px 14px;margin-bottom:16px;flex-wrap:wrap}
+.dblbl{font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.dbtn{background:#fff;border:1px solid var(--b);color:var(--m);padding:5px 12px;border-radius:5px;font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .15s}
+.dbtn:hover,.dbtn.active{background:#111;border-color:#111;color:#fff}
+.dinput{background:#fff;border:1px solid var(--b);color:#111;padding:5px 10px;border-radius:5px;font-family:var(--mono);font-size:11px;outline:none}
+.dinput:focus{border-color:#111}
+.dapply{background:#111;color:#fff;border:none;padding:5px 14px;border-radius:5px;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer}
+
+/* OUTLET HEADER */
+.out-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.out-name{font-size:20px;font-weight:800;color:#111}
+.badge{display:inline-flex;align-items:center;gap:5px;background:var(--s);border:1px solid var(--b);border-radius:20px;padding:4px 12px;font-size:10px;font-family:var(--mono);color:var(--m)}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--g);display:inline-block;animation:p 2s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ASM GRID */
+.asm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:1100px){.asm-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.asm-grid{grid-template-columns:1fr}}
+.acard{background:#fff;border:1px solid var(--b);border-radius:10px;padding:16px 18px;cursor:pointer;transition:all .15s}
+.acard:hover{border-color:#111;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.acard-name{font-size:12px;font-weight:700;color:#111;margin-bottom:8px}
+.acard-sale{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--or);margin-bottom:2px}
+.acard-tgt{font-size:10px;color:var(--m);font-family:var(--mono);margin-bottom:8px}
+.acard-bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.acard-fill{height:100%;border-radius:3px}
+.acard-tags{display:flex;gap:6px}
+.atag{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px}
+.atag.red{background:var(--rd);color:var(--r)}
+.atag.green{background:var(--gd);color:var(--g)}
+
+/* TARGET SETTER */
+.ts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:900px){.ts-grid{grid-template-columns:1fr 1fr}}
+.ts-item{background:var(--s);border:1px solid var(--b);border-radius:7px;padding:12px 14px}
+.ts-name{font-size:11px;font-weight:600;color:#111;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-input{width:100%;background:#fff;border:1px solid var(--b);color:#111;padding:7px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none}
+.ts-input:focus{border-color:#111}
+
+/* COMPLAINT OVERLAY */
+#cmpOverlay{display:none;position:fixed;inset:0;background:#fff;z-index:200;overflow-y:auto}
+.cov-wrap{max-width:1200px;margin:0 auto;padding:24px 26px}
+.cov-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.cov-back{background:none;border:1px solid var(--b);color:var(--m);padding:7px 16px;border-radius:6px;cursor:pointer;font-family:var(--sans);font-size:12px;transition:all .15s}
+.cov-back:hover{border-color:#111;color:#111}
+.cov-title{font-size:18px;font-weight:700;color:#111;margin-bottom:2px}
+.cov-sub{font-size:11px;color:var(--m);font-family:var(--mono)}
+
+/* FILTERS */
+.cov-filters{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cov-fi{background:#fff;border:1px solid var(--b);color:#111;padding:7px 10px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color .15s}
+.cov-fi:focus{border-color:#111}
+.cov-lbl{font-size:11px;color:var(--m);font-family:var(--mono);white-space:nowrap}
+.cov-clr{background:none;border:1px solid var(--b);color:var(--m);padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer}
+.cov-clr:hover{border-color:#111;color:#111}
+
+/* SECTION TITLE */
+.sec-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#111;margin-bottom:12px}
+
+/* INVENTORY */
+.inv-table{width:100%;border-collapse:collapse;font-size:12px}
+.inv-table th{padding:8px 12px;text-align:left;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b);background:var(--s);white-space:nowrap}
+.inv-table td{padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono)}
+.inv-table tr:hover td{background:var(--s)}
+.stk-ok{background:var(--gd);color:var(--g);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+.stk-low{background:var(--ord);color:var(--or);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+.stk-out{background:var(--rd);color:var(--r);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+
+/* SHARED */
+.btn{border:none;padding:8px 16px;border-radius:6px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn-dark{background:#111;color:#fff}.btn-dark:hover{opacity:.85}
+.btn-out{background:none;border:1px solid var(--b);color:#111}.btn-out:hover{background:var(--s)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-red{background:var(--rd);border:1px solid var(--r);color:var(--r);padding:8px 14px;border-radius:6px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer}
+.btn-red:hover{background:var(--r);color:#fff}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.al-blue{background:var(--bld);border:1px solid #bfdbfe;color:var(--bl);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px}
+.mnth-badge{background:var(--s);border:1px solid var(--b);border-radius:5px;padding:3px 10px;font-size:10px;font-family:var(--mono);color:var(--m)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lbox">
+    <div class="llogo">MENDEEZ</div>
+    <div class="lsub">Retail Operations Dashboard</div>
+    <input id="lu" class="linput" type="text" placeholder="Username"
+      onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()">
+    <input id="lp" class="linput" type="password" placeholder="Password"
+      onkeydown="if(event.key==='Enter')doLogin()" oninput="document.getElementById('lerr').textContent=''">
+    <div id="lerr" class="lerr"></div>
+    <button class="lbtn" onclick="doLogin()">Sign In</button>
+    <div class="lforgot" onclick="alert('To reset your password contact:\nsupport@mendeez.com')">Forgot password?</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div class="tlogo">MENDEEZ <span>Retail Dashboard</span></div>
+    <div class="tright">
+      <div class="tuser" id="tUser"></div>
+      <div class="trole" id="tRole"></div>
+      <button class="tlout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabBar"></div>
+  <div id="panels"></div>
+</div>
+
+<!-- COMPLAINT OVERLAY -->
+<div id="cmpOverlay">
+  <div class="cov-wrap">
+
+    <!-- Header -->
+    <div class="cov-hdr">
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="cov-back" onclick="closeCmp()">← Back</button>
+        <div>
+          <div class="cov-title">Complaints</div>
+          <div class="cov-sub" id="cmpSub"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="cmpStatus" style="font-size:11px;font-family:var(--mono);color:var(--m)"></span>
+        <button class="btn btn-out btn-sm" onclick="refreshCmp()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="cov-filters">
+      <!-- Outlet selector — ASM only, shown/hidden by JS -->
+      <div id="cmpOutletWrap" style="display:none;align-items:center;gap:8px">
+        <span class="cov-lbl">Outlet:</span>
+        <select id="cmpOutletSel" class="cov-fi" style="width:190px" onchange="cmpApplyFilters()">
+          <option value="">-- Select outlet --</option>
+        </select>
+      </div>
+      <!-- Date range — always shown -->
+      <span class="cov-lbl">From:</span>
+      <input type="date" id="cmpFrom" class="cov-fi" onchange="cmpApplyFilters()">
+      <span class="cov-lbl">To:</span>
+      <input type="date" id="cmpTo" class="cov-fi" onchange="cmpApplyFilters()">
+      <button class="cov-clr" onclick="cmpClear()">✕ Clear</button>
+      <span id="cmpFStatus" style="font-size:11px;font-family:var(--mono);color:var(--m);margin-left:auto"></span>
+    </div>
+
+    <!-- Empty state -->
+    <div id="cmpEmpty" style="text-align:center;padding:60px;color:var(--m2);font-family:var(--mono)">
+      <div style="font-size:36px;margin-bottom:10px">🔍</div>
+      <div style="font-weight:600;font-size:13px;margin-bottom:4px">Select filters to view complaints</div>
+      <div style="font-size:11px">Choose an outlet or date range above</div>
+    </div>
+
+    <!-- Content -->
+    <div id="cmpContent" style="display:none">
+
+      <!-- ROW 1: Summary cards -->
+      <div class="summary-row" id="cmpSummaryCards"></div>
+
+      <!-- ROW 2: Nature breakdown -->
+      <div class="nature-section">
+        <div class="sec-title">Complaint Nature Breakdown</div>
+        <div class="nature-grid" id="cmpNatureGrid"></div>
+      </div>
+
+      <!-- Complaint Log -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div class="sec-title" style="margin:0">Complaint Log</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="cov-lbl">Filter by nature:</span>
+            <select id="cmpNatureFilter" class="cov-fi" style="width:200px" onchange="cmpRenderTable()">
+              <option value="">All Complaints</option>
+            </select>
+            <span id="cmpTblCount" style="font-size:11px;font-family:var(--mono);color:var(--m)"></span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:500px;overflow-y:auto;border:1px solid var(--b);border-radius:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead id="cmpTHead" style="position:sticky;top:0;background:var(--s)"></thead>
+            <tbody id="cmpTBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG ══
+const USERS = [
+  {u:'admin',  p:'Mndz@2026!R', role:'asm',    name:'ASM Admin'},
+  {u:'khadda', p:'KhddaMkt26!', role:'outlet',  outlet:'DHA Khadda Market',   oid:'khadda', name:'Khadda Manager'},
+  {u:'atrium', p:'Atrium@2026', role:'outlet',  outlet:'Atrium',              oid:'atrium', name:'Atrium Manager'},
+  {u:'badar',  p:'Badar@2026!', role:'outlet',  outlet:'Badar Commercial',    oid:'badar',  name:'Badar Manager'},
+  {u:'dolmen', p:'Dolmn@2026!', role:'outlet',  outlet:'Dolmen Tariq Road',   oid:'dolmen', name:'Dolmen Manager'},
+  {u:'lucky',  p:'Lucky@2026!', role:'outlet',  outlet:'Lucky One',           oid:'lucky',  name:'Lucky Manager'},
+  {u:'ocean',  p:'Ocean@2026!', role:'outlet',  outlet:'Ocean Mall',          oid:'ocean',  name:'Ocean Manager'},
+  {u:'saima',  p:'Saima@2026!', role:'outlet',  outlet:'Saima Square',        oid:'saima',  name:'Saima Manager'},
+  {u:'safa',   p:'Safa@@2026!', role:'outlet',  outlet:'Safa Mall',           oid:'safa',   name:'Safa Manager'},
+  {u:'tariq',  p:'Triq@@2026!', role:'outlet',  outlet:'Tariq Road Shalimar', oid:'tariq',  name:'Tariq Manager'},
+];
+
+const OUTLETS = [
+  {id:'khadda', name:'DHA Khadda Market',   short:'Khadda'},
+  {id:'atrium', name:'Atrium',               short:'Atrium'},
+  {id:'badar',  name:'Badar Commercial',     short:'Badar'},
+  {id:'dolmen', name:'Dolmen Tariq Road',    short:'Dolmen'},
+  {id:'lucky',  name:'Lucky One',            short:'Lucky'},
+  {id:'ocean',  name:'Ocean Mall',           short:'Ocean'},
+  {id:'saima',  name:'Saima Square',         short:'Saima'},
+  {id:'safa',   name:'Safa Mall',            short:'Safa'},
+  {id:'tariq',  name:'Tariq Road Shalimar',  short:'Tariq Rd'},
+];
+
+// Demo data
+const DEMO_SALES   = {khadda:2850000,atrium:3200000,badar:1950000,dolmen:4100000,lucky:5200000,ocean:4800000,saima:1750000,safa:2100000,tariq:2650000};
+const DEMO_INV     = [
+  {sku:'PO-001',name:'Jacquard Polo - Navy',qty:24,low:10},
+  {sku:'PO-002',name:'Jacquard Polo - White',qty:8,low:10},
+  {sku:'TS-001',name:'Oversized Tee - Black',qty:0,low:5},
+  {sku:'JG-001',name:'Pintex Jogger - Olive',qty:45,low:15},
+  {sku:'SH-001',name:'Terry Shorts - Black',qty:12,low:10},
+];
+
+let _user = null;
+let TARGETS = {};
+let CMP_SHEETS = {};
+let CMP_TABS   = {};
+let GTEX_URL   = '';
+let GTEX_KEY   = '';
+
+// ── Complaint state ──
+let _cmpOutletId   = null;
+let _cmpIsAsm      = false;
+let _cmpSheetCache = {};
+let _cmpLoadedIds  = {};
+let _cmpAllRows    = [];
+let _cmpHeaders    = [];
+let _cmpLastRows   = [];
+let _cmpLastHdrs   = [];
+
+// ══ LOGIN ══
+function doLogin(){
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value.trim();
+  const user = USERS.find(x => x.u===u && x.p===p);
+  if(!user){document.getElementById('lerr').textContent='Invalid username or password';return;}
+  _user = user;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('tUser').textContent = user.name;
+  document.getElementById('tRole').textContent = user.role==='asm' ? '👑 ASM' : '🏪 Staff';
+  loadSettings();
+  buildTabs();
+  buildPanels();
+  setTimeout(()=>{ const t=document.querySelector('.tab'); if(t)t.click(); },0);
+}
+
+function doLogout(){
+  _user=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('lu').value='';
+  document.getElementById('lp').value='';
+  document.getElementById('lerr').textContent='';
+}
+
+// ══ SETTINGS ══
+function loadSettings(){
+  try{
+    const d=JSON.parse(localStorage.getItem('mndz_retail')||'{}');
+    TARGETS=d.targets||{};
+    CMP_SHEETS=d.cmpSheets||{};
+    CMP_TABS=d.cmpTabs||{};
+    GTEX_URL=d.gtexUrl||'';
+    GTEX_KEY=d.gtexKey||'';
+  }catch(e){}
+}
+function saveSettings(){
+  localStorage.setItem('mndz_retail',JSON.stringify({targets:TARGETS,cmpSheets:CMP_SHEETS,cmpTabs:CMP_TABS,gtexUrl:GTEX_URL,gtexKey:GTEX_KEY}));
+}
+
+// ══ TABS ══
+function buildTabs(){
+  const bar=document.getElementById('tabBar');
+  bar.innerHTML='';
+  const outlets=_user.role==='asm'?OUTLETS:OUTLETS.filter(o=>o.id===_user.oid);
+  outlets.forEach(o=>{
+    const d=document.createElement('div');
+    d.className='tab';
+    d.textContent=o.short;
+    d.dataset.pid='panel-'+o.id;
+    d.onclick=()=>switchTab(d);
+    bar.appendChild(d);
+  });
+  if(_user.role==='asm'){
+    [{text:'ASM Dashboard',pid:'panel-asm',cls:'asm-tab'},
+     {text:'⚙ Settings',pid:'panel-cfg',cls:''}].forEach(({text,pid,cls})=>{
+      const d=document.createElement('div');
+      d.className='tab'+(cls?' '+cls:'');
+      d.textContent=text;
+      d.dataset.pid=pid;
+      d.onclick=()=>switchTab(d);
+      bar.appendChild(d);
+    });
+  }
+}
+
+function switchTab(el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const p=document.getElementById(el.dataset.pid);
+  if(p)p.classList.add('active');
+}
+
+// ══ PANELS ══
+function buildPanels(){
+  const container=document.getElementById('panels');
+  container.innerHTML='';
+  const outlets=_user.role==='asm'?OUTLETS:OUTLETS.filter(o=>o.id===_user.oid);
+  outlets.forEach(o=>{
+    const d=document.createElement('div');
+    d.className='panel'; d.id='panel-'+o.id;
+    d.innerHTML=buildOutletHTML(o);
+    container.appendChild(d);
+  });
+  if(_user.role==='asm'){
+    const da=document.createElement('div');
+    da.className='panel'; da.id='panel-asm';
+    da.innerHTML=buildAsmHTML();
+    container.appendChild(da);
+    const dc=document.createElement('div');
+    dc.className='panel'; dc.id='panel-cfg';
+    dc.innerHTML=buildCfgHTML();
+    container.appendChild(dc);
+  }
+}
+
+// ══ OUTLET PANEL ══
+function buildOutletHTML(o){
+  const cm=new Date().toISOString().slice(0,7);
+  const tgt=TARGETS[o.id+'_'+cm]||0;
+  const sale=DEMO_SALES[o.id]||0;
+  const pct=tgt>0?Math.round(sale/tgt*100):0;
+  const pc=pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
+  const fillW=Math.min(pct,100);
+  const pilCls=pct>=100?'green':pct>=70?'amber':'red';
+  return `
+  <div class="out-hdr">
+    <div>
+      <div class="out-name">${o.name}</div>
+      <div style="margin-top:4px;display:flex;gap:8px">
+        <span class="badge"><span class="pulse"></span> Live</span>
+        <span class="mnth-badge">${new Date().toLocaleString('en-US',{month:'long',year:'numeric'})}</span>
+      </div>
+    </div>
+    <button class="btn btn-out btn-sm" onclick="refreshOutlet('${o.id}')">↻ Refresh</button>
+  </div>
+
+  <div class="datebar">
+    <span class="dblbl">Range:</span>
+    <button class="dbtn active" onclick="setRange(this,'today','${o.id}')">Today</button>
+    <button class="dbtn" onclick="setRange(this,'week','${o.id}')">This Week</button>
+    <button class="dbtn" onclick="setRange(this,'month','${o.id}')">This Month</button>
+    <button class="dbtn" onclick="setRange(this,'custom','${o.id}')">Custom</button>
+    <div id="customR_${o.id}" style="display:none;align-items:center;gap:6px">
+      <input type="date" class="dinput" id="df_${o.id}">
+      <span style="color:var(--m);font-size:11px">to</span>
+      <input type="date" class="dinput" id="dt_${o.id}">
+      <button class="dapply" onclick="applyRange('${o.id}')">Apply</button>
+    </div>
+  </div>
+
+  <div class="main2">
+    <!-- Target vs Achievement -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--or)"></span>Target vs Achievement</div>
+      <div class="tva-row">
+        <div>
+          <div class="tva-lbl">Monthly Target</div>
+          <div class="tva-val amber">PKR ${fmt(tgt)}</div>
+        </div>
+        <div>
+          <div class="tva-lbl">Net Sales</div>
+          <div class="tva-val green">PKR ${fmt(sale)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--m);margin-bottom:5px">
+        <span>Achievement</span>
+        <span class="pct-pill ${pilCls}" style="background:${pc}20;color:${pc}">${pct}%</span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${fillW}%;background:${pc}"></div></div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--m);margin-top:6px">
+        ${pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'}
+      </div>
+    </div>
+
+    <!-- Complaints -->
+    <div class="cmp-area">
+      <div class="card-title"><span class="dot" style="background:var(--r)"></span>Complaints</div>
+      <div class="cmp-mini-row">
+        <div class="cmp-mini">
+          <div class="cmp-mini-val" style="color:var(--r)">5</div>
+          <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em">Active</div>
+        </div>
+        <div class="cmp-mini">
+          <div class="cmp-mini-val" style="color:var(--g)">18</div>
+          <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em">Solved</div>
+        </div>
+      </div>
+      <button class="cmp-btn" onclick="openCmp('${o.id}','${o.name}')">🔴 Review Complaints</button>
+    </div>
+  </div>
+
+  <!-- Inventory -->
+  <div class="card">
+    <div class="sh">
+      <div class="card-title" style="margin:0"><span class="dot" style="background:var(--bl)"></span>Stock & Inventory</div>
+      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:220px" placeholder="Search product or SKU..." oninput="filterInv(this.value,'${o.id}')">
+    </div>
+    <div class="al-blue"><span>ℹ</span><span>Showing demo inventory. Connect G-Tex API in Settings to see live stock.</span></div>
+    <div style="overflow-x:auto">
+      <table class="inv-table">
+        <thead><tr><th>SKU</th><th>Product Name</th><th>Qty</th><th>Status</th></tr></thead>
+        <tbody id="invBody_${o.id}">
+          ${DEMO_INV.map(p=>`<tr>
+            <td>${p.sku}</td>
+            <td style="font-weight:500">${p.name}</td>
+            <td style="font-weight:700;color:${p.qty===0?'var(--r)':p.qty<p.low?'var(--or)':'var(--g)'}">${p.qty}</td>
+            <td><span class="${p.qty===0?'stk-out':p.qty<p.low?'stk-low':'stk-ok'}">${p.qty===0?'Out of Stock':p.qty<p.low?'Low Stock':'In Stock'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ══ ASM PANEL ══
+function buildAsmHTML(){
+  const cm=new Date().toISOString().slice(0,7);
+  const cards=OUTLETS.map(o=>{
+    const tgt=TARGETS[o.id+'_'+cm]||0;
+    const sale=DEMO_SALES[o.id]||0;
+    const pct=tgt>0?Math.round(sale/tgt*100):0;
+    const fc=pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
+    return `<div class="acard" onclick="goOutlet('${o.id}')">
+      <div class="acard-name">${o.name}</div>
+      <div class="acard-sale">PKR ${fmt(sale)}</div>
+      <div class="acard-tgt">Target: PKR ${fmt(tgt)} · ${pct}%</div>
+      <div class="acard-bar"><div class="acard-fill" style="width:${Math.min(pct,100)}%;background:${fc}"></div></div>
+      <div class="acard-tags">
+        <span class="atag red">🔴 5 active</span>
+        <span class="atag green">✓ 18 solved</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totSale=Object.values(DEMO_SALES).reduce((s,v)=>s+v,0);
+  const totTgt=OUTLETS.reduce((s,o)=>s+(TARGETS[o.id+'_'+cm]||0),0);
+  const totPct=totTgt>0?Math.round(totSale/totTgt*100):0;
+  const tpc=totPct>=100?'var(--g)':totPct>=70?'var(--or)':'var(--r)';
+
+  return `
+  <div class="out-hdr">
+    <div>
+      <div class="out-name">ASM Dashboard</div>
+      <div style="margin-top:4px"><span class="badge"><span class="pulse"></span> All 9 Outlets</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <span class="mnth-badge">${new Date().toLocaleString('en-US',{month:'long',year:'numeric'})}</span>
+      <button class="btn-red" onclick="openAsmCmp()">🔴 All Complaints</button>
+    </div>
+  </div>
+
+  <!-- Overall summary -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+    <div class="card"><div class="card-title"><span class="dot" style="background:var(--or)"></span>Total Net Sales</div><div class="tva-val amber" style="font-size:26px">PKR ${fmt(totSale)}</div></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:var(--g)"></span>Combined Target</div><div class="tva-val green" style="font-size:26px">PKR ${fmt(totTgt)}</div></div>
+    <div class="card"><div class="card-title"><span class="dot" style="background:var(--bl)"></span>Overall Achievement</div>
+      <div class="tva-val" style="font-size:26px;color:${tpc}">${totPct}%</div>
+      <div class="prog-bg" style="margin-top:10px"><div class="prog-fill" style="width:${Math.min(totPct,100)}%;background:${tpc}"></div></div>
+    </div>
+  </div>
+
+  <!-- All outlet cards -->
+  <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#111;margin-bottom:12px">All Outlets — Target vs Achievement</div>
+  <div class="asm-grid">${cards}</div>
+
+  <!-- Set targets -->
+  <div class="card">
+    <div class="sh">
+      <div class="card-title" style="margin:0"><span class="dot" style="background:var(--or)"></span>Set Monthly Targets</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="month" style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="tgtMonth" value="${cm}">
+        <button class="btn btn-dark btn-sm" onclick="saveTargets()">Save Targets</button>
+      </div>
+    </div>
+    <div class="ts-grid">
+      ${OUTLETS.map(o=>`<div class="ts-item">
+        <div class="ts-name">${o.name}</div>
+        <input class="ts-input" id="ti_${o.id}" type="number" placeholder="Target (PKR)" value="${TARGETS[o.id+'_'+cm]||''}">
+      </div>`).join('')}
+    </div>
+    <div id="tgtSaved" style="display:none;margin-top:10px;font-size:11px;font-family:var(--mono);color:var(--g)">✓ Targets saved</div>
+  </div>
+
+  <!-- Complaints by outlet -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--r)"></span>Complaints by Outlet</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${OUTLETS.map(o=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#111'" onmouseout="this.style.borderColor='var(--b)'" onclick="openCmp('${o.id}','${o.name}')">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px">${o.name}</div>
+        <div style="display:flex;gap:8px">
+          <span class="atag red">🔴 5</span>
+          <span class="atag green">✓ 18</span>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ══ CONFIG PANEL ══
+function buildCfgHTML(){
+  return `
+  <div class="out-hdr"><div class="out-name">⚙ Settings</div></div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--bl)"></span>G-Tex API</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">API Base URL</div>
+        <input style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgUrl" placeholder="https://api.gtex.com/v1/" value="${GTEX_URL}"></div>
+      <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">API Key</div>
+        <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgKey" placeholder="Your API key" value="${GTEX_KEY}"></div>
+    </div>
+    <button class="btn btn-dark btn-sm" onclick="saveCfgApi()">Save API Settings</button>
+    <div id="apiSaved" style="display:none;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g)">✓ Saved</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--r)"></span>Complaint Sheets per Outlet</div>
+    <div style="font-size:11px;color:var(--m);font-family:var(--mono);margin-bottom:14px">Enter Google Sheet ID and tab name for each outlet's complaint data.</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${OUTLETS.map(o=>`<div style="display:grid;grid-template-columns:180px 1fr 160px;gap:10px;align-items:center">
+        <div style="font-size:12px;font-weight:600">${o.name}</div>
+        <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:7px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="sid_${o.id}" placeholder="Sheet ID" value="${CMP_SHEETS[o.id]||''}">
+        <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:7px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="stab_${o.id}" placeholder="Tab name" value="${CMP_TABS[o.id]||'Complaints'}">
+      </div>`).join('')}
+    </div>
+    <button class="btn btn-dark btn-sm" style="margin-top:14px" onclick="saveCfgSheets()">Save Sheet Settings</button>
+    <div id="sheetSaved" style="display:none;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g)">✓ Saved</div>
+  </div>`;
+}
+
+// ══ HELPERS ══
+function fmt(n){
+  if(!n||n===0)return '0';
+  if(n>=1000000)return (n/1000000).toFixed(1)+'M';
+  if(n>=1000)return Math.round(n/1000)+'K';
+  return n.toLocaleString();
+}
+function goOutlet(oid){
+  const tab=document.querySelector(`.tab[data-pid="panel-${oid}"]`);
+  if(tab)tab.click();
+}
+function setRange(btn,range,oid){
+  btn.closest('.datebar').querySelectorAll('.dbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const cr=document.getElementById('customR_'+oid);
+  if(cr)cr.style.display=range==='custom'?'flex':'none';
+}
+function applyRange(oid){
+  const f=document.getElementById('df_'+oid)?.value;
+  const t=document.getElementById('dt_'+oid)?.value;
+  if(!f||!t){alert('Select both dates');return;}
+  console.log('Fetch G-Tex:',oid,f,t);
+}
+function refreshOutlet(oid){ console.log('Refresh:',oid); }
+function filterInv(q,oid){
+  const lq=q.toLowerCase();
+  document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
+    r.style.display=lq&&!r.textContent.toLowerCase().includes(lq)?'none':'';
+  });
+}
+function saveTargets(){
+  const m=document.getElementById('tgtMonth')?.value||new Date().toISOString().slice(0,7);
+  OUTLETS.forEach(o=>{const v=document.getElementById('ti_'+o.id)?.value;if(v)TARGETS[o.id+'_'+m]=parseInt(v)||0;});
+  saveSettings();
+  buildPanels();
+  const el=document.getElementById('tgtSaved');
+  if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}
+  const atab=document.querySelector('.tab.active');
+  if(atab)atab.click();
+}
+function saveCfgApi(){
+  GTEX_URL=document.getElementById('cfgUrl')?.value.trim()||'';
+  GTEX_KEY=document.getElementById('cfgKey')?.value.trim()||'';
+  saveSettings();
+  const el=document.getElementById('apiSaved');
+  if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}
+}
+function saveCfgSheets(){
+  OUTLETS.forEach(o=>{
+    const sid=document.getElementById('sid_'+o.id)?.value.trim()||'';
+    const stab=document.getElementById('stab_'+o.id)?.value.trim()||'Complaints';
+    if(sid)CMP_SHEETS[o.id]=sid;
+    CMP_TABS[o.id]=stab;
+  });
+  saveSettings();
+  const el=document.getElementById('sheetSaved');
+  if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}
+}
+
+// ══ COMPLAINTS ══
+function openCmp(oid, oname){
+  _cmpIsAsm  = _user.role==='asm';
+  _cmpOutletId = oid;
+  _cmpAllRows  = [];
+  _cmpHeaders  = [];
+
+  document.getElementById('cmpOverlay').style.display='block';
+  document.body.style.overflow='hidden';
+  document.getElementById('cmpSub').textContent = oname;
+  document.getElementById('cmpStatus').textContent='';
+  document.getElementById('cmpFStatus').textContent='';
+
+  // Outlet selector — ASM sees it, outlet staff never
+  const wrap=document.getElementById('cmpOutletWrap');
+  if(_cmpIsAsm){
+    wrap.style.display='flex';
+    const sel=document.getElementById('cmpOutletSel');
+    sel.innerHTML='<option value="">-- Select outlet --</option>';
+    OUTLETS.forEach(o=>{
+      const opt=document.createElement('option');
+      opt.value=o.id; opt.textContent=o.name;
+      sel.appendChild(opt);
+    });
+    sel.value=oid;
+  } else {
+    wrap.style.display='none';
+  }
+
+  // Reset date filters
+  document.getElementById('cmpFrom').value='';
+  document.getElementById('cmpTo').value='';
+  document.getElementById('cmpNatureFilter').innerHTML='<option value="">All Complaints</option>';
+
+  // Load sheet and show
+  cmpLoadSheet(oid, ()=>{ cmpShow(); });
+}
+
+function openAsmCmp(){
+  _cmpIsAsm    = true;
+  _cmpOutletId = '';
+  _cmpAllRows  = [];
+  _cmpHeaders  = [];
+
+  document.getElementById('cmpOverlay').style.display='block';
+  document.body.style.overflow='hidden';
+  document.getElementById('cmpSub').textContent='ASM View · All Outlets';
+  document.getElementById('cmpStatus').textContent='';
+  document.getElementById('cmpFStatus').textContent='';
+
+  // Show outlet selector — empty by default
+  const wrap=document.getElementById('cmpOutletWrap');
+  wrap.style.display='flex';
+  const sel=document.getElementById('cmpOutletSel');
+  sel.innerHTML='<option value="">-- Select outlet --</option>';
+  OUTLETS.forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.id; opt.textContent=o.name;
+    sel.appendChild(opt);
+  });
+
+  // Reset date filters
+  document.getElementById('cmpFrom').value='';
+  document.getElementById('cmpTo').value='';
+  document.getElementById('cmpNatureFilter').innerHTML='<option value="">All Complaints</option>';
+
+  // Show empty state — nothing selected yet
+  cmpShowEmpty();
+}
+
+function closeCmp(){
+  document.getElementById('cmpOverlay').style.display='none';
+  document.body.style.overflow='';
+}
+
+function refreshCmp(){
+  const oid=_cmpIsAsm ? document.getElementById('cmpOutletSel').value : _cmpOutletId;
+  if(oid){
+    delete _cmpLoadedIds[oid];
+    delete _cmpSheetCache[oid];
+  }
+  cmpApplyFilters();
+}
+
+function cmpClear(){
+  document.getElementById('cmpFrom').value='';
+  document.getElementById('cmpTo').value='';
+  if(!_cmpIsAsm) cmpShow();
+  else if(document.getElementById('cmpOutletSel').value) cmpApplyFilters();
+  else cmpShowEmpty();
+}
+
+async function cmpApplyFilters(){
+  const selOutlet = _cmpIsAsm
+    ? document.getElementById('cmpOutletSel').value
+    : _cmpOutletId;
+  const from = document.getElementById('cmpFrom').value;
+  const to   = document.getElementById('cmpTo').value;
+
+  // ASM with nothing selected → empty state
+  if(_cmpIsAsm && !selOutlet && !from && !to){ cmpShowEmpty(); return; }
+  if(!selOutlet && !_cmpOutletId){ cmpShowEmpty(); return; }
+
+  const oid = selOutlet || _cmpOutletId;
+
+  // Update sub title
+  const oname = OUTLETS.find(o=>o.id===oid)?.name||oid;
+  document.getElementById('cmpSub').textContent = oname;
+
+  // Load if needed
+  await cmpLoadSheet(oid);
+
+  // Get rows from cache
+  let rows = (_cmpSheetCache[oid]?.rows||[]).map(r=>({cells:r}));
+  const hdrs = _cmpSheetCache[oid]?.headers||[];
+
+  // Filter by date
+  if(from||to){
+    const fd=from?new Date(from):null;
+    const td=to?new Date(to+'T23:59:59'):null;
+    rows=rows.filter(({cells})=>{
+      for(const cell of cells){
+        if(!cell)continue;
+        const d=new Date(cell);
+        if(!isNaN(d)&&String(cell).length>=8){
+          if(fd&&d<fd)return false;
+          if(td&&d>td)return false;
+          return true;
+        }
+      }
+      return true;
+    });
+  }
+
+  document.getElementById('cmpFStatus').textContent =
+    rows.length+' complaint'+(rows.length!==1?'s':'')+
+    (from||to?' · '+( from||'...')+' → '+(to||'today'):'');
+
+  cmpRenderAll(rows, hdrs);
+}
+
+async function cmpLoadSheet(oid, cb){
+  if(_cmpLoadedIds[oid]){ if(cb)cb(); return; }
+  const sid  = CMP_SHEETS[oid];
+  const stab = CMP_TABS[oid]||'Complaints';
+  document.getElementById('cmpStatus').textContent='Loading...';
+  if(!sid){
+    _cmpSheetCache[oid]={headers:[],rows:[]};
+    _cmpLoadedIds[oid]=true;
+    document.getElementById('cmpStatus').textContent='⚠ No sheet configured — set in Settings';
+    if(cb)cb(); return;
+  }
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${sid}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(stab)}`;
+    const r=await fetch(url);
+    const txt=await r.text();
+    const json=JSON.parse(txt.replace(/^[^(]+\(/,'').replace(/\);?$/,''));
+    const cols=json.table?.cols||[];
+    const rowsRaw=json.table?.rows||[];
+    const headers=cols.map(c=>String(c.label||'').trim());
+    const rows=rowsRaw.map(r=>(r.c||[]).map(c=>String(c?.v||c?.f||'').trim())).filter(r=>r.some(c=>c));
+    _cmpSheetCache[oid]={headers,rows};
+    _cmpLoadedIds[oid]=true;
+    document.getElementById('cmpStatus').textContent='✓ '+rows.length+' loaded';
+  }catch(e){
+    _cmpSheetCache[oid]={headers:[],rows:[]};
+    _cmpLoadedIds[oid]=true;
+    document.getElementById('cmpStatus').textContent='✗ '+e.message.slice(0,50);
+  }
+  if(cb)cb();
+}
+
+function cmpShow(){
+  const oid = _cmpOutletId;
+  const data = _cmpSheetCache[oid];
+  if(!data){ cmpShowEmpty(); return; }
+  const rows = data.rows.map(r=>({cells:r}));
+  cmpRenderAll(rows, data.headers);
+}
+
+function cmpShowEmpty(){
+  document.getElementById('cmpEmpty').style.display='block';
+  document.getElementById('cmpContent').style.display='none';
+}
+
+function cmpRenderAll(rows, hdrs){
+  if(!rows.length){
+    document.getElementById('cmpEmpty').style.display='block';
+    document.getElementById('cmpEmpty').innerHTML='<div style="font-size:36px;margin-bottom:10px">📭</div><div style="font-weight:600;font-size:13px;color:var(--m);margin-bottom:4px">No complaints found</div><div style="font-size:11px">Try adjusting your filters</div>';
+    document.getElementById('cmpContent').style.display='none';
+    return;
+  }
+  document.getElementById('cmpEmpty').style.display='none';
+  document.getElementById('cmpContent').style.display='block';
+
+  // Status & nature index
+  const statIdx=hdrs.findIndex(h=>['status','state','resolution'].some(k=>h.toLowerCase().includes(k)));
+  const natIdx =hdrs.findIndex(h=>['nature','type','category'].some(k=>h.toLowerCase().includes(k)));
+
+  // Count solved/active
+  let solved=0,active=0;
+  const natCounts={};
+  rows.forEach(({cells})=>{
+    const s=(cells[statIdx]||'').toLowerCase();
+    if(statIdx>=0){
+      if(s.includes('solv')||s.includes('clos')||s.includes('done'))solved++;
+      else active++;
+    }
+    if(natIdx>=0&&cells[natIdx])natCounts[cells[natIdx]]=(natCounts[cells[natIdx]]||0)+1;
+  });
+  if(statIdx<0)active=rows.length;
+  const total=rows.length;
+  const solveRate=total>0?Math.round(solved/total*100):0;
+
+  // ROW 1: Summary cards
+  document.getElementById('cmpSummaryCards').innerHTML=[
+    {lbl:'Total Complaints',val:total,      cls:'red'},
+    {lbl:'Solved',           val:solved,    cls:'green'},
+    {lbl:'Active / Open',    val:active,    cls:'amber'},
+    {lbl:'Solve Rate',       val:solveRate+'%', cls:'blue'},
+  ].map(c=>`<div class="scard">
+    <div class="scard-lbl">${c.lbl}</div>
+    <div class="scard-val ${c.cls}">${c.val}</div>
+  </div>`).join('');
+
+  // ROW 2: Nature breakdown
+  const nats=Object.entries(natCounts).sort((a,b)=>b[1]-a[1]);
+  const natColors=['var(--r)','var(--or)','var(--bl)','var(--g)','#7c3aed','#db2777'];
+  const filterSel=document.getElementById('cmpNatureFilter');
+  filterSel.innerHTML='<option value="">All Complaints</option>';
+  nats.forEach(([n,c])=>{const o=document.createElement('option');o.value=n;o.textContent=n+' ('+c+')';filterSel.appendChild(o);});
+
+  document.getElementById('cmpNatureGrid').innerHTML=nats.length
+    ?nats.map(([n,c],i)=>`<div class="nat-card" onclick="cmpFilterNature('${n.replace(/'/g,"\\'")}')">
+        <div class="nat-name" title="${n}">${n.toUpperCase()}</div>
+        <div class="nat-count" style="color:${natColors[i%natColors.length]}">${c}</div>
+        <div class="nat-pct">${total>0?Math.round(c/total*100)+'%':''} of total</div>
+      </div>`).join('')
+    :'<div style="color:var(--m2);font-size:12px;font-family:var(--mono)">No nature column detected in sheet headers</div>';
+
+  _cmpLastRows=rows; _cmpLastHdrs=hdrs;
+  cmpRenderTable();
+}
+
+function cmpFilterNature(n){
+  document.getElementById('cmpNatureFilter').value=n;
+  cmpRenderTable();
+}
+
+function cmpRenderTable(){
+  const filter=document.getElementById('cmpNatureFilter').value;
+  const hdrs=_cmpLastHdrs;
+  let rows=_cmpLastRows;
+  if(filter)rows=rows.filter(({cells})=>cells.some(c=>String(c).toLowerCase().includes(filter.toLowerCase())));
+  document.getElementById('cmpTblCount').textContent=rows.length+' complaint'+(rows.length!==1?'s':'');
+  const statIdx=hdrs.findIndex(h=>['status','state','resolution'].some(k=>h.toLowerCase().includes(k)));
+  document.getElementById('cmpTHead').innerHTML=hdrs.length
+    ?'<tr>'+hdrs.map(h=>`<th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--m);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--b);white-space:nowrap">${h}</th>`).join('')+'</tr>':'';
+  if(!rows.length){
+    document.getElementById('cmpTBody').innerHTML=`<tr><td colspan="${hdrs.length||5}" style="padding:20px;text-align:center;color:var(--m2);font-family:var(--mono);font-size:12px">No complaints${filter?' matching "'+filter+'"':''}</td></tr>`;
+    return;
+  }
+  document.getElementById('cmpTBody').innerHTML=rows.map(({cells})=>{
+    return '<tr onmouseover="this.style.background=\'var(--s)\'" onmouseout="this.style.background=\'\'">'+
+      hdrs.map((_,ci)=>{
+        const v=String(cells[ci]||'').trim();
+        const lv=v.toLowerCase();
+        let d=v||'—';
+        if(ci===statIdx){
+          if(lv.includes('solv')||lv.includes('clos'))d=`<span style="color:var(--g);font-weight:600">${v}</span>`;
+          else if(lv.includes('activ')||lv.includes('open')||lv.includes('pend'))d=`<span style="color:var(--r);font-weight:600">${v}</span>`;
+        }
+        return `<td style="padding:7px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#111">${d}</td>`;
+      }).join('')+
+    '</tr>';
+  }).join('');
+}
+</script>
+</body>
+</html>

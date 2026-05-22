@@ -544,24 +544,36 @@ function buildOutletHTML(o){
     <!-- Target vs Achievement -->
     <div class="card">
       <div class="card-title"><span class="dot" style="background:var(--or)"></span>Target vs Achievement</div>
+      <!-- Row 1: Two value cards -->
       <div class="tva-row">
         <div>
           <div class="tva-lbl" id="tgtLbl_${o.id}">MTD Target (${tgtData.daysUsed}/${tgtData.daysTotal} days)</div>
           <div class="tva-val amber" id="tgtVal_${o.id}">PKR ${fmt(tgt)}</div>
-          <div style="font-size:10px;font-family:var(--mono);color:var(--m);margin-top:2px" id="mthVal_${o.id}">Monthly: PKR ${fmt(monthly)}</div>
         </div>
         <div>
           <div class="tva-lbl">Net Sales MTD</div>
           <div class="tva-val green">PKR ${fmt(sale)}</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--m);margin-bottom:5px">
-        <span>Achievement</span>
-        <span class="pct-pill ${pilCls}" id="pct_${o.id}" style="background:${pc}20;color:${pc}">${pct}%</span>
+      <!-- Row 2: Progress bar -->
+      <div class="prog-bg" style="margin-bottom:8px">
+        <div class="prog-fill" id="prog_${o.id}" style="width:${fillW}%;background:${pc}"></div>
       </div>
-      <div class="prog-bg"><div class="prog-fill" id="prog_${o.id}" style="width:${fillW}%;background:${pc}"></div></div>
-      <div style="font-size:11px;font-family:var(--mono);color:var(--m);margin-top:6px" id="st_${o.id}">
-        ${pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'}
+      <!-- Row 3: Achievement line -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:12px;font-family:var(--mono);color:#111">
+          Achieved: <strong>${fmt(sale)} / <span id="tgtValInline_${o.id}">${fmt(tgt)}</span></strong>
+        </div>
+        <span class="pct-pill ${pilCls}" id="pct_${o.id}" style="background:${pc}20;color:${pc};font-size:13px">${pct}%</span>
+      </div>
+      <!-- Row 4: Monthly target + status -->
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:10px;font-family:var(--mono);color:var(--m)" id="mthVal_${o.id}">
+          Monthly Target: PKR ${fmt(monthly)}
+        </div>
+        <div style="font-size:10px;font-family:var(--mono);color:${pc}" id="st_${o.id}">
+          ${pct>=100?'🎉 Target achieved!':pct>=70?'⚡ On track':'⚠ Needs attention'}
+        </div>
       </div>
     </div>
 
@@ -616,9 +628,18 @@ function buildAsmHTML(){
     const fc=pct>=100?'var(--g)':pct>=70?'var(--or)':'var(--r)';
     return `<div class="acard" onclick="goOutlet('${o.id}')">
       <div class="acard-name">${o.name}</div>
-      <div class="acard-sale">PKR ${fmt(sale)}</div>
-      <div class="acard-tgt">MTD Target: PKR ${fmt(tgt)} · ${pct}% (of PKR ${fmt(td2.monthly)} monthly)</div>
+      <!-- Achieved / Target -->
+      <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px">
+        <span class="acard-sale" style="margin:0">PKR ${fmt(sale)}</span>
+        <span style="font-size:10px;color:var(--m);font-family:var(--mono)">/ ${fmt(tgt)}</span>
+        <span style="font-size:12px;font-weight:700;font-family:var(--mono);color:${fc};margin-left:auto">${pct}%</span>
+      </div>
+      <!-- Progress bar -->
       <div class="acard-bar"><div class="acard-fill" style="width:${Math.min(pct,100)}%;background:${fc}"></div></div>
+      <!-- Monthly target below -->
+      <div style="font-size:10px;font-family:var(--mono);color:var(--m);margin-bottom:6px">
+        Monthly: PKR ${fmt(td2.monthly)} · ${td2.daysUsed}/${td2.daysTotal} days
+      </div>
       <div class="acard-tags">
         <span class="atag red">🔴 5 active</span>
         <span class="atag green">✓ 18 solved</span>

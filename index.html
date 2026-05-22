@@ -381,6 +381,7 @@ function doLogin(){
   loadSettings();
   buildTabs();
   buildPanels();
+  loadShopifySkuMap(); // Pre-load product images
   setTimeout(()=>{
     const t=document.querySelector('.tab'); if(t)t.click();
     updateAllTaskLabels();
@@ -486,6 +487,87 @@ function buildPanels(){
 // PRO-RATED TARGET
 // Monthly target ÷ days in month × end date day
 // ══════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+// SHOPIFY SKU → IMAGE MAP
+// Fetches all products from Shopify via Cloudflare Worker
+// Builds: _skuImageMap = { 'SKU123': 'https://cdn.shopify.com/...' }
+// ══════════════════════════════════════════════════
+let _skuImageMap   = {};   // sku → image url
+let _skuTitleMap   = {};   // sku → product title
+let _shopifyLoaded = false;
+const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
+const SHOPIFY_STORE  = 'mendeez.myshopify.com';
+const SHOPIFY_TOKEN  = '';  // Set in Settings
+
+async function loadShopifySkuMap(){
+  if(_shopifyLoaded) return;
+  const token = SHOPIFY_TOKEN || (()=>{
+    try{ return JSON.parse(localStorage.getItem('mndz_retail')||'{}').shopifyToken||''; }catch(e){ return ''; }
+  })();
+  if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
+
+  let cursor = null;
+  let hasMore = true;
+  let totalLoaded = 0;
+
+  while(hasMore){
+    try{
+      const ep = '/products.json?limit=250&fields=title,images,variants'+(cursor?'&since_id='+cursor:'');
+      const url = SHOPIFY_WORKER+'?store='+encodeURIComponent(SHOPIFY_STORE)+'&token='+encodeURIComponent(token)+'&ep='+encodeURIComponent(ep);
+      const r   = await fetch(url);
+      const d   = await r.json();
+      const products = d.products||[];
+
+      products.forEach(p=>{
+        const imgUrl = p.images?.[0]?.src || '';
+        (p.variants||[]).forEach(v=>{
+          if(v.sku){
+            _skuImageMap[v.sku.trim()]   = imgUrl;
+            _skuTitleMap[v.sku.trim()]   = p.title;
+          }
+        });
+      });
+
+      totalLoaded += products.length;
+      hasMore = products.length === 250;
+      if(hasMore) cursor = products[products.length-1].id;
+    }catch(e){
+      console.log('Shopify SKU map load error:', e.message);
+      hasMore = false;
+    }
+  }
+
+  _shopifyLoaded = true;
+  console.log('Shopify SKU map loaded:', Object.keys(_skuImageMap).length, 'SKUs from', totalLoaded, 'products');
+}
+
+function getProductImage(sku){
+  if(!sku) return '';
+  return _skuImageMap[sku.trim()] || _skuImageMap[sku.trim().toUpperCase()] || '';
+}
+
+function getProductTitle(sku){
+  if(!sku) return '';
+  return _skuTitleMap[sku.trim()] || '';
+}
+
+// Render inventory row with image
+function renderInvRow(sku, name, qty, low){
+  const imgUrl = getProductImage(sku);
+  const status = qty===0 ? 'stk-out' : qty<low ? 'stk-low' : 'stk-ok';
+  const statusTxt = qty===0 ? 'Out of Stock' : qty<low ? 'Low Stock' : 'In Stock';
+  const imgHtml = imgUrl
+    ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--b)" onerror="this.style.display='none'">`
+    : `<div style="width:40px;height:40px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+  return `<tr>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--b)">${imgHtml}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${sku}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-weight:500">${name || getProductTitle(sku) || '—'}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-weight:700;font-family:var(--mono);color:${qty===0?'var(--r)':qty<low?'var(--or)':'var(--g)'}">${qty}</td>
+    <td style="padding:8px 12px;border-bottom:1px solid var(--b)"><span class="${status}">${statusTxt}</span></td>
+  </tr>`;
+}
+
 function getProratedTarget(oid, toDateStr){
   const toDate     = toDateStr ? new Date(toDateStr) : new Date();
   const yearMon    = toDate.toISOString().slice(0,7);
@@ -603,14 +685,9 @@ function buildOutletHTML(o){
     <div class="al-blue"><span>ℹ</span><span>Showing demo inventory. Connect G-Tex API in Settings to see live stock.</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
-        <thead><tr><th>SKU</th><th>Product Name</th><th>Qty</th><th>Status</th></tr></thead>
+        <thead><tr><th style="width:52px"></th><th>SKU</th><th>Product Name</th><th>Qty</th><th>Status</th></tr></thead>
         <tbody id="invBody_${o.id}">
-          ${DEMO_INV.map(p=>`<tr>
-            <td>${p.sku}</td>
-            <td style="font-weight:500">${p.name}</td>
-            <td style="font-weight:700;color:${p.qty===0?'var(--r)':p.qty<p.low?'var(--or)':'var(--g)'}">${p.qty}</td>
-            <td><span class="${p.qty===0?'stk-out':p.qty<p.low?'stk-low':'stk-ok'}">${p.qty===0?'Out of Stock':p.qty<p.low?'Low Stock':'In Stock'}</span></td>
-          </tr>`).join('')}
+          ${DEMO_INV.map(p=>renderInvRow(p.sku,p.name,p.qty,p.low)).join('')}
         </tbody>
       </table>
     </div>
@@ -725,8 +802,10 @@ function buildCfgHTML(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">API Base URL</div>
         <input style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgUrl" placeholder="https://api.gtex.com/v1/" value="${GTEX_URL}"></div>
-      <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">API Key</div>
+      <div><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">G-Tech API Key</div>
         <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgKey" placeholder="Your API key" value="${GTEX_KEY}"></div>
+      <div style="margin-top:12px"><div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Admin Token (for product images)</div>
+        <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgShopifyToken" placeholder="shpat_xxxxxxxxxxxxxxxx" value="${SHOPIFY_TOKEN}"></div>
     </div>
     <button class="btn btn-dark btn-sm" onclick="saveCfgApi()">Save API Settings</button>
     <div id="apiSaved" style="display:none;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--g)">✓ Saved</div>
@@ -828,6 +907,10 @@ function saveTargets(){
 function saveCfgApi(){
   GTEX_URL=document.getElementById('cfgUrl')?.value.trim()||'';
   GTEX_KEY=document.getElementById('cfgKey')?.value.trim()||'';
+  const st=document.getElementById('cfgShopifyToken')?.value.trim()||'';
+  if(st){ const d=JSON.parse(localStorage.getItem('mndz_retail')||'{}'); d.shopifyToken=st; localStorage.setItem('mndz_retail',JSON.stringify(d)); }
+  _shopifyLoaded=false; // force reload
+  loadShopifySkuMap();
   saveSettings();
   const el=document.getElementById('apiSaved');
   if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}

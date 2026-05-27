@@ -214,6 +214,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100v
     <div class="tright">
       <div class="tuser" id="tUser"></div>
       <div class="trole" id="tRole"></div>
+      <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:transparent;border:1px solid #1a9e5c;border-radius:6px;color:#1a9e5c;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;font-family:'Syne',sans-serif">🏠 Portal</a>
+      <a href="/tasks/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#1a9e5c;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">✅ Task Manager</a>
+      
       <button class="tlout" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
@@ -304,39 +307,92 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100v
 <script>
 // ══ CONFIG ══
 const USERS = [
-  {u:'admin',  p:'Mndz@2026!R', role:'asm',    name:'ASM Admin'},
-  {u:'khadda', p:'KhddaMkt26!', role:'outlet',  outlet:'DHA Khadda Market',   oid:'khadda', name:'Khadda Manager'},
-  {u:'atrium', p:'Atrium@2026', role:'outlet',  outlet:'Atrium',              oid:'atrium', name:'Atrium Manager'},
-  {u:'badar',  p:'Badar@2026!', role:'outlet',  outlet:'Badar Commercial',    oid:'badar',  name:'Badar Manager'},
-  {u:'dolmen', p:'Dolmn@2026!', role:'outlet',  outlet:'Dolmen Tariq Road',   oid:'dolmen', name:'Dolmen Manager'},
-  {u:'lucky',  p:'Lucky@2026!', role:'outlet',  outlet:'Lucky One',           oid:'lucky',  name:'Lucky Manager'},
-  {u:'ocean',  p:'Ocean@2026!', role:'outlet',  outlet:'Ocean Mall',          oid:'ocean',  name:'Ocean Manager'},
-  {u:'saima',  p:'Saima@2026!', role:'outlet',  outlet:'Saima Square',        oid:'saima',  name:'Saima Manager'},
-  {u:'safa',   p:'Safa@@2026!', role:'outlet',  outlet:'Safa Mall',           oid:'safa',   name:'Safa Manager'},
-  {u:'tariq',  p:'Triq@@2026!', role:'outlet',  outlet:'Tariq Road Shalimar', oid:'tariq',  name:'Tariq Manager'},
+  {u:'admin',    p:'Mndz@2026!R', role:'asm',    name:'ASM Admin'},
+  {u:'dha',      p:'Dha@@2026!',  role:'outlet',  outlet:'DHA Cricket Stadium',        oid:'dha',      name:'DHA Manager'},
+  {u:'warehouse',p:'Whse@2026!',  role:'outlet',  outlet:'The Warehouse Badar',        oid:'warehouse',name:'Warehouse Manager'},
+  {u:'ocean',    p:'Ocean@2026!', role:'outlet',  outlet:'Ocean Mall',                 oid:'ocean',    name:'Ocean Manager'},
+  {u:'atrium',   p:'Atrium@2026', role:'outlet',  outlet:'Mendeez Atrium Mall',        oid:'atrium',   name:'Atrium Manager'},
+  {u:'twh',      p:'Twh@@2026!',  role:'outlet',  outlet:'TWH Inventory',              oid:'twh',      name:'TWH Manager'},
+  {u:'tariq',    p:'Triq@@2026!', role:'outlet',  outlet:'Tariq Road',                 oid:'tariq',    name:'Tariq Manager'},
+  {u:'lucky',    p:'Lucky@2026!', role:'outlet',  outlet:'Lucky One Mall',             oid:'lucky',    name:'Lucky Manager'},
+  {u:'northwalk',p:'Nwlk@2026!',  role:'outlet',  outlet:'North Walk',                 oid:'northwalk',name:'North Walk Manager'},
+  {u:'hyderi',   p:'Hydr@2026!',  role:'outlet',  outlet:'Spar Hyderi',                oid:'hyderi',   name:'Hyderi Manager'},
+  {u:'emporium', p:'Empr@2026!',  role:'outlet',  outlet:'Mandeez Emporium Mall',      oid:'emporium', name:'Emporium Manager'},
+  {u:'sharfabad',p:'Shrf@2026!',  role:'outlet',  outlet:'Spar Sharfabad',             oid:'sharfabad',name:'Sharfabad Manager'},
+  {u:'ark',      p:'Ark@@2026!',  role:'outlet',  outlet:'Ark Super Mart',             oid:'ark',      name:'Ark Manager'},
+  {u:'habbit',   p:'Hbbt@2026!',  role:'outlet',  outlet:'Habbit Markitt',             oid:'habbit',   name:'Habbit Manager'},
+  {u:'squareone',p:'Sq1@@2026!',  role:'outlet',  outlet:'Square One Mall',            oid:'squareone',name:'Square One Manager'},
+  {u:'malir',    p:'Malr@2026!',  role:'outlet',  outlet:'Mendeez Malir Cant',         oid:'malir',    name:'Malir Manager'},
+  {u:'ecom',     p:'Ecom@2026!',  role:'outlet',  outlet:'E-Commerce',                 oid:'ecom',     name:'E-Commerce Manager'},
+  {u:'hyderimkt',p:'Hym@@2026!',  role:'outlet',  outlet:'Hyderi Super Market',        oid:'hyderimkt',name:'Hyderi Mkt Manager'},
+  {u:'teem',     p:'Teem@2026!',  role:'outlet',  outlet:'Teem Mart',                  oid:'teem',     name:'Teem Manager'},
+  {u:'creek',    p:'Crk@@2026!',  role:'outlet',  outlet:'Creek Mark',                 oid:'creek',    name:'Creek Manager'},
+  {u:'dolmen',   p:'Dolmn@2026!', role:'outlet',  outlet:'Mendeez Dolmen Mall',        oid:'dolmen',   name:'Dolmen Manager'},
+  {u:'karim',    p:'Krm@@2026!',  role:'outlet',  outlet:'Karim Block',                oid:'karim',    name:'Karim Manager'},
+  {u:'factory',  p:'Fact@2026!',  role:'outlet',  outlet:'Factory',                    oid:'factory',  name:'Factory Manager'},
 ];
 
 const OUTLETS = [
-  {id:'khadda', name:'DHA Khadda Market',   short:'Khadda'},
-  {id:'atrium', name:'Atrium',               short:'Atrium'},
-  {id:'badar',  name:'Badar Commercial',     short:'Badar'},
-  {id:'dolmen', name:'Dolmen Tariq Road',    short:'Dolmen'},
-  {id:'lucky',  name:'Lucky One',            short:'Lucky'},
-  {id:'ocean',  name:'Ocean Mall',           short:'Ocean'},
-  {id:'saima',  name:'Saima Square',         short:'Saima'},
-  {id:'safa',   name:'Safa Mall',            short:'Safa'},
-  {id:'tariq',  name:'Tariq Road Shalimar',  short:'Tariq Rd'},
+  {id:'dha',       name:'DHA Cricket Stadium',        short:'DHA'},
+  {id:'warehouse', name:'The Warehouse (Badar)',       short:'Badar'},
+  {id:'ocean',     name:'Ocean Mall',                  short:'Ocean'},
+  {id:'atrium',    name:'Mendeez Atrium Mall',         short:'Atrium'},
+  {id:'twh',       name:'TWH Inventory',               short:'TWH'},
+  {id:'tariq',     name:'Tariq Road',                  short:'Tariq'},
+  {id:'lucky',     name:'Lucky One Mall',              short:'Lucky'},
+  {id:'northwalk', name:'North Walk',                  short:'N.Walk'},
+  {id:'hyderi',    name:'Spar Hyderi',                 short:'Hyderi'},
+  {id:'emporium',  name:'Mandeez Emporium Mall',       short:'Emporium'},
+  {id:'sharfabad', name:'Spar Sharfabad',              short:'Sharfabad'},
+  {id:'ark',       name:'Ark Super Mart',              short:'Ark'},
+  {id:'habbit',    name:'Habbit Markitt',              short:'Habbit'},
+  {id:'squareone', name:'Square One Mall',             short:'Sq.One'},
+  {id:'malir',     name:'Mendeez Malir Cant',          short:'Malir'},
+  {id:'ecom',      name:'E-Commerce',                  short:'E-Com'},
+  {id:'hyderimkt', name:'Hyderi Super Market',         short:'Hyderi Mkt'},
+  {id:'teem',      name:'Teem Mart',                   short:'Teem'},
+  {id:'creek',     name:'Creek Mark',                  short:'Creek'},
+  {id:'dolmen',    name:'Mendeez Dolmen Mall T.Road',  short:'Dolmen'},
+  {id:'karim',     name:'Karim Block',                 short:'Karim'},
+  {id:'factory',   name:'Factory',                     short:'Factory'},
 ];
 
-// Demo data
-const DEMO_SALES   = {khadda:2850000,atrium:3200000,badar:1950000,dolmen:4100000,lucky:5200000,ocean:4800000,saima:1750000,safa:2100000,tariq:2650000};
-const DEMO_INV     = [
-  {sku:'PO-001',name:'Jacquard Polo - Navy',qty:24,low:10},
-  {sku:'PO-002',name:'Jacquard Polo - White',qty:8,low:10},
-  {sku:'TS-001',name:'Oversized Tee - Black',qty:0,low:5},
-  {sku:'JG-001',name:'Pintex Jogger - Olive',qty:45,low:15},
-  {sku:'SH-001',name:'Terry Shorts - Black',qty:12,low:10},
-];
+// G-Tech location code mapping (dashboard id → G-Tech location code)
+const GTECH_LOC = {
+  dha       : '00100010001',
+  warehouse : '00100010002',
+  ocean     : '00100010003',
+  atrium    : '00100010004',
+  twh       : '00100010005',
+  tariq     : '00100010008',
+  lucky     : '00100010009',
+  northwalk : '00100010011',
+  hyderi    : '00100010012',
+  emporium  : '00100010013',
+  sharfabad : '00100010014',
+  ark       : '00100010015',
+  habbit    : '00100010016',
+  squareone : '00100010017',
+  malir     : '00100010018',
+  ecom      : '00100010019',
+  hyderimkt : '00100010020',
+  teem      : '00100010021',
+  creek     : '00100010022',
+  dolmen    : '00100010023',
+  karim     : '00100010024',
+  factory   : '00100020001',
+};
+const GTECH_API_KEY = 'qTpq3bVFho';
+const GTECH_BASE    = 'https://mandeez.gtech-api.com/api/post/StockBalanceOmni';
+
+// Demo sales (placeholder until sales API is connected)
+const DEMO_SALES = {
+  dha:0, warehouse:0, ocean:0, atrium:0, twh:0, tariq:0, lucky:0,
+  northwalk:0, hyderi:0, emporium:0, sharfabad:0, ark:0, habbit:0,
+  squareone:0, malir:0, ecom:0, hyderimkt:0, teem:0, creek:0,
+  dolmen:0, karim:0, factory:0,
+};
+
 
 let _user = null;
 let TARGETS = {};
@@ -392,6 +448,14 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
+    // Set default inventory date range for all outlets (year start → today)
+    const yearStart = new Date().getFullYear() + '-01-01';
+    OUTLETS.forEach(o=>{
+      const f=document.getElementById('invFrom_'+o.id);
+      const tEl=document.getElementById('invTo_'+o.id);
+      if(f && !f.value)   f.value   = yearStart;
+      if(tEl && !tEl.value) tEl.value = today;
+    });
   },0);
 }
 
@@ -504,9 +568,11 @@ let _skuImageMap   = {};   // sku → image url
 let _skuTitleMap   = {};   // sku → product title
 let _shopifyLoaded = false;
 const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
-const SHOPIFY_STORE  = 'mendeez.myshopify.com'; // fallback default
-let _shopifyToken = '';   // Loaded from localStorage
-let _shopifyStore = 'mendeez.myshopify.com'; // Loaded from localStorage
+const SHOPIFY_STORE  = 'mendeez.myshopify.com';
+let _shopifyToken = '';
+let _shopifyStore = 'mendeez.myshopify.com'; // fixed store name
+let _barcodeImageMap = {}; // barcode → image url
+let _barcodeTitleMap = {}; // barcode → product title
 
 async function loadShopifySkuMap(){
   if(_shopifyLoaded) return;
@@ -520,7 +586,7 @@ async function loadShopifySkuMap(){
   while(hasMore){
     try{
       const ep = '/products.json?limit=250&fields=title,images,variants'+(cursor?'&since_id='+cursor:'');
-      const url = SHOPIFY_WORKER+'?store='+encodeURIComponent(_shopifyStore||SHOPIFY_STORE)+'&token='+encodeURIComponent(token)+'&ep='+encodeURIComponent(ep);
+      const url = SHOPIFY_WORKER+'?store='+encodeURIComponent('mendeez.myshopify.com')+'&token='+encodeURIComponent(token)+'&ep='+encodeURIComponent(ep);
       const r   = await fetch(url);
       const d   = await r.json();
       const products = d.products||[];
@@ -528,9 +594,17 @@ async function loadShopifySkuMap(){
       products.forEach(p=>{
         const imgUrl = p.images?.[0]?.src || '';
         (p.variants||[]).forEach(v=>{
+          // Map by SKU
           if(v.sku){
-            _skuImageMap[v.sku.trim()]   = imgUrl;
-            _skuTitleMap[v.sku.trim()]   = p.title;
+            _skuImageMap[v.sku.trim()]         = imgUrl;
+            _skuImageMap[v.sku.trim().toUpperCase()] = imgUrl;
+            _skuTitleMap[v.sku.trim()]         = p.title;
+          }
+          // Map by barcode — this is what G-Tech returns
+          if(v.barcode){
+            _barcodeImageMap[v.barcode.trim()]         = imgUrl;
+            _barcodeImageMap[v.barcode.trim().toUpperCase()] = imgUrl;
+            _barcodeTitleMap[v.barcode.trim()]         = p.title;
           }
         });
       });
@@ -539,23 +613,28 @@ async function loadShopifySkuMap(){
       hasMore = products.length === 250;
       if(hasMore) cursor = products[products.length-1].id;
     }catch(e){
-      console.log('Shopify SKU map load error:', e.message);
+      console.log('Shopify load error:', e.message);
       hasMore = false;
     }
   }
 
   _shopifyLoaded = true;
-  console.log('Shopify SKU map loaded:', Object.keys(_skuImageMap).length, 'SKUs from', totalLoaded, 'products');
+  console.log(`Shopify loaded: ${Object.keys(_skuImageMap).length} SKUs, ${Object.keys(_barcodeImageMap).length} barcodes from ${totalLoaded} products`);
 }
 
-function getProductImage(sku){
-  if(!sku) return '';
-  return _skuImageMap[sku.trim()] || _skuImageMap[sku.trim().toUpperCase()] || '';
+// Lookup by barcode first (G-Tech), fallback to SKU
+function getProductImage(barcodeOrSku){
+  if(!barcodeOrSku) return '';
+  const k = barcodeOrSku.trim();
+  return _barcodeImageMap[k] || _barcodeImageMap[k.toUpperCase()]
+      || _skuImageMap[k]     || _skuImageMap[k.toUpperCase()] || '';
 }
 
-function getProductTitle(sku){
-  if(!sku) return '';
-  return _skuTitleMap[sku.trim()] || '';
+function getProductTitle(barcodeOrSku){
+  if(!barcodeOrSku) return '';
+  const k = barcodeOrSku.trim();
+  return _barcodeTitleMap[k] || _barcodeTitleMap[k.toUpperCase()]
+      || _skuTitleMap[k]     || _skuTitleMap[k.toUpperCase()] || '';
 }
 
 // Render inventory row with image
@@ -685,17 +764,31 @@ function buildOutletHTML(o){
 
   <!-- Inventory -->
   <div class="card">
-    <div class="sh">
+    <div class="sh" style="flex-wrap:wrap;gap:8px">
       <div class="card-title" style="margin:0"><span class="dot" style="background:var(--bl)"></span>Stock & Inventory</div>
-      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:220px" placeholder="Search product or SKU..." oninput="filterInv(this.value,'${o.id}')">
+      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:200px" placeholder="Search SKU or barcode..." oninput="filterInv(this.value,'${o.id}')">
     </div>
-    <div class="al-blue"><span>ℹ</span><span>Showing demo inventory. Connect G-Tex API in Settings to see live stock.</span></div>
+    <!-- G-Tech Fetch Bar -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--s);border:1px solid var(--b);border-radius:7px;padding:10px 12px;margin-bottom:12px">
+      <span style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em">From</span>
+      <input type="date" id="invFrom_${o.id}" class="dinput" style="font-size:11px">
+      <span style="font-size:10px;color:var(--m);font-family:var(--mono)">To</span>
+      <input type="date" id="invTo_${o.id}" class="dinput" style="font-size:11px">
+      <input type="text" id="invBarcode_${o.id}" class="dinput" placeholder="Barcode (opt.)" style="width:130px;font-size:11px">
+      <button class="btn btn-dark btn-sm" onclick="fetchGtechInventory('${o.id}')">▶ Fetch Live Stock</button>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;margin-left:4px">
+        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111"> Show zero stock
+      </label>
+      <span id="invStatus_${o.id}" style="margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--m)"></span>
+    </div>
+    <!-- Summary pills (shown after fetch) -->
+    <div id="invSummary_${o.id}" style="display:none;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+    <!-- Info / error banner -->
+    <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Set a date range and click <strong>Fetch Live Stock</strong> to load real inventory from G-Tech.</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
-        <thead><tr><th style="width:52px"></th><th>SKU</th><th>Product Name</th><th>Qty</th><th>Status</th></tr></thead>
-        <tbody id="invBody_${o.id}">
-          ${DEMO_INV.map(p=>renderInvRow(p.sku,p.name,p.qty,p.low)).join('')}
-        </tbody>
+        <thead><tr><th style="width:52px"></th><th>Barcode / SKU</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
+        <tbody id="invBody_${o.id}"></tbody>
       </table>
     </div>
   </div>`;
@@ -745,7 +838,7 @@ function buildAsmHTML(){
   <div class="out-hdr">
     <div>
       <div class="out-name">ASM Dashboard</div>
-      <div style="margin-top:4px"><span class="badge"><span class="pulse"></span> All 9 Outlets</span></div>
+      <div style="margin-top:4px"><span class="badge"><span class="pulse"></span> All ${OUTLETS.length} Outlets</span></div>
     </div>
     <div style="display:flex;gap:8px">
       <span class="mnth-badge">${new Date().toLocaleString('en-US',{month:'long',year:'numeric'})}</span>
@@ -816,12 +909,13 @@ function buildCfgHTML(){
         <input style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgKey" placeholder="qTpq3bVFho">
       </div>
       <div>
-        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Store URL</div>
-        <input style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgShopifyStore" placeholder="mendeez.myshopify.com">
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Store <span style="color:var(--g)">✓ Fixed</span></div>
+        <input style="width:100%;background:var(--s2);border:1px solid var(--b);color:var(--m);padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none;cursor:not-allowed" value="mendeez.myshopify.com" readonly>
       </div>
       <div>
-        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Admin Token</div>
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Shopify Admin Token <span style="color:var(--r)">★ Required for product images</span></div>
         <input type="password" style="width:100%;background:var(--s);border:1px solid var(--b);color:#111;padding:8px 10px;border-radius:5px;font-family:var(--mono);font-size:12px;outline:none" id="cfgShopifyToken" placeholder="shpat_xxxxxxxxxxxxxxxx">
+        <div style="font-size:10px;color:var(--m);font-family:var(--mono);margin-top:4px">Generate in Shopify Admin → Apps → Private apps → Admin API token</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -907,7 +1001,130 @@ function applyRange(oid){
   if(!f||!t){alert('Select both dates');return;}
   console.log('Fetch G-Tex:',oid,f,t);
 }
-function refreshOutlet(oid){ console.log('Refresh:',oid); }
+function refreshOutlet(oid){ fetchGtechInventory(oid); }
+
+// ══ G-TECH LIVE INVENTORY ══
+async function fetchGtechInventory(oid){
+  const locCode = GTECH_LOC[oid] || '';
+  const fromEl  = document.getElementById('invFrom_'+oid);
+  const toEl    = document.getElementById('invTo_'+oid);
+  const bcEl    = document.getElementById('invBarcode_'+oid);
+  const statusEl= document.getElementById('invStatus_'+oid);
+  const bannerEl= document.getElementById('invBanner_'+oid);
+  const bodyEl  = document.getElementById('invBody_'+oid);
+  const summEl  = document.getElementById('invSummary_'+oid);
+  const showZero= document.getElementById('invShowZero_'+oid)?.checked ?? true;
+
+  // Default dates: start of year → today
+  const today   = new Date();
+  const todayStr= today.toISOString().slice(0,10);
+  if(!fromEl.value) fromEl.value = today.getFullYear() + '-01-01';
+  if(!toEl.value)   toEl.value   = todayStr;
+
+  function fmtDate(dateStr){
+    const [y,m,d] = dateStr.split('-');
+    return `${m}/${d}/${y} 00:00:00`;
+  }
+
+  const params = new URLSearchParams({
+    API      : GTECH_API_KEY,
+    DateFrom : fmtDate(fromEl.value),
+    DateTo   : fmtDate(toEl.value) .replace('00:00:00','23:59:59'),
+    Location : locCode,
+    Barcode  : bcEl?.value.trim() || '',
+  });
+  const url = GTECH_BASE + '?' + params.toString();
+
+  // UI: loading state
+  if(statusEl) statusEl.textContent = '⏳ Loading…';
+  if(bannerEl){ bannerEl.className='al-blue'; bannerEl.innerHTML='<span>⏳</span><span>Fetching live stock from G-Tech…</span>'; bannerEl.style.display='flex'; }
+  if(bodyEl)  bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Loading inventory…</td></tr>`;
+  if(summEl)  summEl.style.display='none';
+
+  try{
+    const res  = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    let rows;
+    try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON response'); }
+    if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
+
+    // Normalise fields (handle any casing)
+    const data = rows.map(r=>({
+      barcode      : r.barcode      ?? r.Barcode      ?? '',
+      location     : r.location     ?? r.Location     ?? '',
+      balanceQty   : parseFloat(r.balanceQty   ?? r.BalanceQty   ?? 0),
+      holdQty      : parseFloat(r.holdQty      ?? r.HoldQty      ?? 0),
+      totalStock   : parseFloat(r.totalStock   ?? r.TotalStock   ?? 0),
+      price        : parseFloat(r.price        ?? r.Price        ?? 0),
+      discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
+      lastUpdated  : r.lastUpdated  ?? r.LastUpdated  ?? '',
+    }));
+
+    // Filter zero stock if toggle off
+    const filtered = showZero ? data : data.filter(r=>r.totalStock>0);
+
+    // Summary stats
+    const inStock  = data.filter(r=>r.totalStock>0).length;
+    const zeroStock= data.filter(r=>r.totalStock===0).length;
+    const totalBal = data.reduce((s,r)=>s+r.balanceQty,0);
+    const totalStk = data.reduce((s,r)=>s+r.totalStock,0);
+
+    if(summEl){
+      summEl.style.display='flex';
+      summEl.innerHTML=[
+        {l:'Total SKUs', v:data.length,           c:'var(--bl)'},
+        {l:'In Stock',   v:inStock,                c:'var(--g)'},
+        {l:'Zero Stock', v:zeroStock,              c:'var(--r)'},
+        {l:'Balance Qty',v:totalBal.toFixed(0),   c:'#111'},
+        {l:'Total Stock',v:totalStk.toFixed(0),   c:'var(--or)'},
+      ].map(s=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:7px;padding:8px 14px;text-align:center;min-width:90px">
+        <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${s.c}">${s.v}</div>
+        <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);margin-top:2px">${s.l}</div>
+      </div>`).join('');
+    }
+
+    // Render rows
+    if(bodyEl){
+      if(filtered.length===0){
+        bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No records found. Try adjusting the date range or enabling "Show zero stock".</td></tr>`;
+      } else {
+        bodyEl.innerHTML = filtered.map(r=>{
+          const imgUrl = getProductImage(r.barcode);
+          const imgHtml= imgUrl
+            ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--b)" onerror="this.style.display='none'">`
+            : `<div style="width:40px;height:40px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+          const stCls  = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
+          const stTxt  = r.totalStock===0?'Out of Stock':r.balanceQty<5?'Low Stock':'In Stock';
+          const disc   = r.discountedPrice>0 ? `<span style="font-size:10px;color:var(--g)"> (${r.discountedPrice.toLocaleString()})</span>` : '';
+          return `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b)">${imgHtml}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-weight:500;font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(2)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(2)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(2)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">PKR ${r.price.toLocaleString()}${disc}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    if(statusEl) statusEl.textContent = `✓ ${filtered.length} of ${data.length} rows · ${new Date().toLocaleTimeString()}`;
+    if(bannerEl) bannerEl.style.display='none';
+
+  } catch(err){
+    if(statusEl) statusEl.textContent = '⚠ Error';
+    if(bannerEl){
+      bannerEl.style.background='var(--rd)';
+      bannerEl.style.borderColor='var(--r)';
+      bannerEl.style.color='var(--r)';
+      bannerEl.innerHTML=`<span>⚠</span><span>${err.message}${err.message.includes('fetch')||err.message.includes('Failed')?'  — possible CORS issue. Try opening the URL directly in your browser.':''}</span>`;
+    }
+    if(bodyEl) bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Failed to load inventory: ${err.message}</td></tr>`;
+  }
+}
 function filterInv(q,oid){
   const lq=q.toLowerCase();
   document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
@@ -953,11 +1170,8 @@ function populateSettingsFields(){
 function saveCfgApi(){
   GTEX_URL=document.getElementById('cfgUrl')?.value.trim()||'';
   GTEX_KEY=document.getElementById('cfgKey')?.value.trim()||'';
-  const ss=document.getElementById('cfgShopifyStore')?.value.trim()||'';
   const st=document.getElementById('cfgShopifyToken')?.value.trim()||'';
-  if(ss) _shopifyStore=ss;
-  if(st) _shopifyToken=st;
-  if(ss||st){ _shopifyLoaded=false; loadShopifySkuMap(); }
+  if(st){ _shopifyToken=st; _shopifyLoaded=false; loadShopifySkuMap(); }
   saveSettings();
   const el=document.getElementById('apiSaved');
   if(el){el.style.display='block';setTimeout(()=>el.style.display='none',2000);}
@@ -1532,7 +1746,10 @@ function generateReport(){
     <td>${totTgt.toLocaleString()}</td><td>${totSale.toLocaleString()}</td>
     <td style="${totPct>=100?'color:#1a9e5c':totPct>=70?'color:#d97706':'color:#cc3333'}">${totPct}%</td>
     <td colspan="4"></td></tr>
-    </tbody></table></body></html>`;
+    </tbody></table>
+
+
+</body></html>`;
   const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1540,6 +1757,19 @@ function generateReport(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 
+
+// ═══════════════════════════════════════════════════
+// SUPABASE CONFIG — Mendeez Dashboard  
+// ═══════════════════════════════════════════════════
+const SUPA_URL  = 'https://afewclisvjjwvpxvyazm.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmZXdjbGlzdmpqd3ZweHZ5YXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODQ3OTcsImV4cCI6MjA5NTI2MDc5N30.bixfpmZU1MDdUKj85rtE1xgoa5F3oX9N2UFdquvWJTQ';
+const DB = {
+  h:{'apikey':SUPA_ANON,'Authorization':`Bearer ${SUPA_ANON}`,'Content-Type':'application/json','Prefer':'return=representation'},
+  async get(t,q=''){try{const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:this.h});return r.ok?r.json():[];}catch(e){return[];}},
+  async insert(t,d){try{const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:this.h,body:JSON.stringify(Array.isArray(d)?d:[d])});return r.ok?r.json():null;}catch(e){return null;}},
+  async update(t,id,d,col='id'){try{await fetch(`${SUPA_URL}/rest/v1/${t}?${col}=eq.${id}`,{method:'PATCH',headers:this.h,body:JSON.stringify(d)});}catch(e){}},
+  async upsert(t,d){try{const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...this.h,'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(Array.isArray(d)?d:[d])});return r.ok?r.json():null;}catch(e){return null;}}
+};
 </script>
 
 <!-- ══ TASK OVERLAY ══ -->

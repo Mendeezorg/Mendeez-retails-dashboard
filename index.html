@@ -308,89 +308,48 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100v
 // ══ CONFIG ══
 const USERS = [
   {u:'admin',    p:'Mndz@2026!R', role:'asm',    name:'ASM Admin'},
-  {u:'dha',      p:'Dha@@2026!',  role:'outlet',  outlet:'DHA Cricket Stadium',        oid:'dha',      name:'DHA Manager'},
-  {u:'warehouse',p:'Whse@2026!',  role:'outlet',  outlet:'The Warehouse Badar',        oid:'warehouse',name:'Warehouse Manager'},
-  {u:'ocean',    p:'Ocean@2026!', role:'outlet',  outlet:'Ocean Mall',                 oid:'ocean',    name:'Ocean Manager'},
-  {u:'atrium',   p:'Atrium@2026', role:'outlet',  outlet:'Mendeez Atrium Mall',        oid:'atrium',   name:'Atrium Manager'},
-  {u:'twh',      p:'Twh@@2026!',  role:'outlet',  outlet:'TWH Inventory',              oid:'twh',      name:'TWH Manager'},
-  {u:'tariq',    p:'Triq@@2026!', role:'outlet',  outlet:'Tariq Road',                 oid:'tariq',    name:'Tariq Manager'},
-  {u:'lucky',    p:'Lucky@2026!', role:'outlet',  outlet:'Lucky One Mall',             oid:'lucky',    name:'Lucky Manager'},
-  {u:'northwalk',p:'Nwlk@2026!',  role:'outlet',  outlet:'North Walk',                 oid:'northwalk',name:'North Walk Manager'},
-  {u:'hyderi',   p:'Hydr@2026!',  role:'outlet',  outlet:'Spar Hyderi',                oid:'hyderi',   name:'Hyderi Manager'},
-  {u:'emporium', p:'Empr@2026!',  role:'outlet',  outlet:'Mandeez Emporium Mall',      oid:'emporium', name:'Emporium Manager'},
-  {u:'sharfabad',p:'Shrf@2026!',  role:'outlet',  outlet:'Spar Sharfabad',             oid:'sharfabad',name:'Sharfabad Manager'},
-  {u:'ark',      p:'Ark@@2026!',  role:'outlet',  outlet:'Ark Super Mart',             oid:'ark',      name:'Ark Manager'},
-  {u:'habbit',   p:'Hbbt@2026!',  role:'outlet',  outlet:'Habbit Markitt',             oid:'habbit',   name:'Habbit Manager'},
-  {u:'squareone',p:'Sq1@@2026!',  role:'outlet',  outlet:'Square One Mall',            oid:'squareone',name:'Square One Manager'},
-  {u:'malir',    p:'Malr@2026!',  role:'outlet',  outlet:'Mendeez Malir Cant',         oid:'malir',    name:'Malir Manager'},
-  {u:'ecom',     p:'Ecom@2026!',  role:'outlet',  outlet:'E-Commerce',                 oid:'ecom',     name:'E-Commerce Manager'},
-  {u:'hyderimkt',p:'Hym@@2026!',  role:'outlet',  outlet:'Hyderi Super Market',        oid:'hyderimkt',name:'Hyderi Mkt Manager'},
-  {u:'teem',     p:'Teem@2026!',  role:'outlet',  outlet:'Teem Mart',                  oid:'teem',     name:'Teem Manager'},
-  {u:'creek',    p:'Crk@@2026!',  role:'outlet',  outlet:'Creek Mark',                 oid:'creek',    name:'Creek Manager'},
-  {u:'dolmen',   p:'Dolmn@2026!', role:'outlet',  outlet:'Mendeez Dolmen Mall',        oid:'dolmen',   name:'Dolmen Manager'},
-  {u:'karim',    p:'Krm@@2026!',  role:'outlet',  outlet:'Karim Block',                oid:'karim',    name:'Karim Manager'},
-  {u:'factory',  p:'Fact@2026!',  role:'outlet',  outlet:'Factory',                    oid:'factory',  name:'Factory Manager'},
+  {u:'dha',      p:'Dha@@2026!',  role:'outlet', outlet:'DHA Cricket Stadium',       oid:'dha',      name:'DHA Manager'},
+  {u:'warehouse',p:'Whse@2026!',  role:'outlet', outlet:'The Warehouse Badar',       oid:'warehouse',name:'Warehouse Manager'},
+  {u:'ocean',    p:'Ocean@2026!', role:'outlet', outlet:'Ocean Mall',                oid:'ocean',    name:'Ocean Manager'},
+  {u:'atrium',   p:'Atrium@2026', role:'outlet', outlet:'Mendeez Atrium Mall',       oid:'atrium',   name:'Atrium Manager'},
+  {u:'tariq',    p:'Triq@@2026!', role:'outlet', outlet:'Tariq Road',                oid:'tariq',    name:'Tariq Manager'},
+  {u:'lucky',    p:'Lucky@2026!', role:'outlet', outlet:'Lucky One Mall',            oid:'lucky',    name:'Lucky Manager'},
+  {u:'squareone',p:'Sq1@@2026!',  role:'outlet', outlet:'Square One Mall',           oid:'squareone',name:'Square One Manager'},
+  {u:'malir',    p:'Malr@2026!',  role:'outlet', outlet:'Mendeez Malir Cant',        oid:'malir',    name:'Malir Manager'},
+  {u:'dolmen',   p:'Dolmn@2026!', role:'outlet', outlet:'Mendeez Dolmen Mall T.Road',oid:'dolmen',   name:'Dolmen Manager'},
 ];
 
 const OUTLETS = [
-  {id:'dha',       name:'DHA Cricket Stadium',        short:'DHA'},
-  {id:'warehouse', name:'The Warehouse (Badar)',       short:'Badar'},
-  {id:'ocean',     name:'Ocean Mall',                  short:'Ocean'},
-  {id:'atrium',    name:'Mendeez Atrium Mall',         short:'Atrium'},
-  {id:'twh',       name:'TWH Inventory',               short:'TWH'},
-  {id:'tariq',     name:'Tariq Road',                  short:'Tariq'},
-  {id:'lucky',     name:'Lucky One Mall',              short:'Lucky'},
-  {id:'northwalk', name:'North Walk',                  short:'N.Walk'},
-  {id:'hyderi',    name:'Spar Hyderi',                 short:'Hyderi'},
-  {id:'emporium',  name:'Mandeez Emporium Mall',       short:'Emporium'},
-  {id:'sharfabad', name:'Spar Sharfabad',              short:'Sharfabad'},
-  {id:'ark',       name:'Ark Super Mart',              short:'Ark'},
-  {id:'habbit',    name:'Habbit Markitt',              short:'Habbit'},
-  {id:'squareone', name:'Square One Mall',             short:'Sq.One'},
-  {id:'malir',     name:'Mendeez Malir Cant',          short:'Malir'},
-  {id:'ecom',      name:'E-Commerce',                  short:'E-Com'},
-  {id:'hyderimkt', name:'Hyderi Super Market',         short:'Hyderi Mkt'},
-  {id:'teem',      name:'Teem Mart',                   short:'Teem'},
-  {id:'creek',     name:'Creek Mark',                  short:'Creek'},
-  {id:'dolmen',    name:'Mendeez Dolmen Mall T.Road',  short:'Dolmen'},
-  {id:'karim',     name:'Karim Block',                 short:'Karim'},
-  {id:'factory',   name:'Factory',                     short:'Factory'},
+  {id:'dha',       name:'DHA Cricket Stadium',         short:'DHA'},
+  {id:'warehouse', name:'The Warehouse (Badar)',        short:'Badar'},
+  {id:'ocean',     name:'Ocean Mall',                   short:'Ocean'},
+  {id:'atrium',    name:'Mendeez Atrium Mall',          short:'Atrium'},
+  {id:'tariq',     name:'Tariq Road',                   short:'Tariq'},
+  {id:'lucky',     name:'Lucky One Mall',               short:'Lucky'},
+  {id:'squareone', name:'Square One Mall',              short:'Sq.One'},
+  {id:'malir',     name:'Mendeez Malir Cant',           short:'Malir'},
+  {id:'dolmen',    name:'Mendeez Dolmen Mall T.Road',   short:'Dolmen'},
 ];
 
-// G-Tech location code mapping (dashboard id → G-Tech location code)
+// G-Tech location code mapping
 const GTECH_LOC = {
   dha       : '00100010001',
   warehouse : '00100010002',
   ocean     : '00100010003',
   atrium    : '00100010004',
-  twh       : '00100010005',
   tariq     : '00100010008',
   lucky     : '00100010009',
-  northwalk : '00100010011',
-  hyderi    : '00100010012',
-  emporium  : '00100010013',
-  sharfabad : '00100010014',
-  ark       : '00100010015',
-  habbit    : '00100010016',
   squareone : '00100010017',
   malir     : '00100010018',
-  ecom      : '00100010019',
-  hyderimkt : '00100010020',
-  teem      : '00100010021',
-  creek     : '00100010022',
   dolmen    : '00100010023',
-  karim     : '00100010024',
-  factory   : '00100020001',
 };
 const GTECH_API_KEY = 'qTpq3bVFho';
 const GTECH_BASE    = 'https://mandeez.gtech-api.com/api/post/StockBalanceOmni';
 
 // Demo sales (placeholder until sales API is connected)
 const DEMO_SALES = {
-  dha:0, warehouse:0, ocean:0, atrium:0, twh:0, tariq:0, lucky:0,
-  northwalk:0, hyderi:0, emporium:0, sharfabad:0, ark:0, habbit:0,
-  squareone:0, malir:0, ecom:0, hyderimkt:0, teem:0, creek:0,
-  dolmen:0, karim:0, factory:0,
+  dha:0, warehouse:0, ocean:0, atrium:0, tariq:0,
+  lucky:0, squareone:0, malir:0, dolmen:0,
 };
 
 
@@ -448,14 +407,7 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-    // Set default inventory date range for all outlets (year start → today)
-    const yearStart = new Date().getFullYear() + '-01-01';
-    OUTLETS.forEach(o=>{
-      const f=document.getElementById('invFrom_'+o.id);
-      const tEl=document.getElementById('invTo_'+o.id);
-      if(f && !f.value)   f.value   = yearStart;
-      if(tEl && !tEl.value) tEl.value = today;
-    });
+
   },0);
 }
 
@@ -766,28 +718,24 @@ function buildOutletHTML(o){
   <div class="card">
     <div class="sh" style="flex-wrap:wrap;gap:8px">
       <div class="card-title" style="margin:0"><span class="dot" style="background:var(--bl)"></span>Stock & Inventory</div>
-      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:200px" placeholder="Search SKU or barcode..." oninput="filterInv(this.value,'${o.id}')">
+      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:200px" placeholder="Search barcode or name..." oninput="filterInv(this.value,'${o.id}')">
     </div>
     <!-- G-Tech Fetch Bar -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--s);border:1px solid var(--b);border-radius:7px;padding:10px 12px;margin-bottom:12px">
-      <span style="font-size:10px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em">From</span>
-      <input type="date" id="invFrom_${o.id}" class="dinput" style="font-size:11px">
-      <span style="font-size:10px;color:var(--m);font-family:var(--mono)">To</span>
-      <input type="date" id="invTo_${o.id}" class="dinput" style="font-size:11px">
-      <input type="text" id="invBarcode_${o.id}" class="dinput" placeholder="Barcode (opt.)" style="width:130px;font-size:11px">
-      <button class="btn btn-dark btn-sm" onclick="fetchGtechInventory('${o.id}')">▶ Fetch Live Stock</button>
+      <input type="text" id="invBarcode_${o.id}" class="dinput" placeholder="Filter by barcode (optional)" style="width:220px;font-size:11px">
+      <button class="btn btn-dark btn-sm" onclick="fetchGtechInventory('${o.id}')">▶ Load Inventory</button>
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;margin-left:4px">
-        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111"> Show zero stock
+        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111" onchange="renderInvPage('${o.id}',0)"> Show zero stock
       </label>
       <span id="invStatus_${o.id}" style="margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--m)"></span>
     </div>
-    <!-- Summary pills (shown after fetch) -->
+    <!-- Summary pills -->
     <div id="invSummary_${o.id}" style="display:none;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
-    <!-- Info / error banner -->
-    <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Set a date range and click <strong>Fetch Live Stock</strong> to load real inventory from G-Tech.</span></div>
+    <!-- Banner -->
+    <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Click <strong>Load Inventory</strong> to fetch current stock for this outlet.</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
-        <thead><tr><th style="width:52px"></th><th>Barcode / SKU</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
+        <thead><tr><th style="width:52px"></th><th>Barcode</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
         <tbody id="invBody_${o.id}"></tbody>
       </table>
     </div>
@@ -1004,132 +952,169 @@ function applyRange(oid){
 function refreshOutlet(oid){ fetchGtechInventory(oid); }
 
 // ══ G-TECH LIVE INVENTORY ══
+const INV_PAGE_SIZE = 100; // rows rendered at a time
+let _invData = {}; // oid → full normalised array
+
 async function fetchGtechInventory(oid){
-  const locCode = GTECH_LOC[oid] || '';
-  const fromEl  = document.getElementById('invFrom_'+oid);
-  const toEl    = document.getElementById('invTo_'+oid);
-  const bcEl    = document.getElementById('invBarcode_'+oid);
-  const statusEl= document.getElementById('invStatus_'+oid);
-  const bannerEl= document.getElementById('invBanner_'+oid);
-  const bodyEl  = document.getElementById('invBody_'+oid);
-  const summEl  = document.getElementById('invSummary_'+oid);
-  const showZero= document.getElementById('invShowZero_'+oid)?.checked ?? true;
+  const locCode  = GTECH_LOC[oid] || '';
+  const bcEl     = document.getElementById('invBarcode_'+oid);
+  const statusEl = document.getElementById('invStatus_'+oid);
+  const bannerEl = document.getElementById('invBanner_'+oid);
+  const bodyEl   = document.getElementById('invBody_'+oid);
+  const summEl   = document.getElementById('invSummary_'+oid);
+  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
 
-  // Default dates: start of year → today
-  const today   = new Date();
-  const todayStr= today.toISOString().slice(0,10);
-  if(!fromEl.value) fromEl.value = today.getFullYear() + '-01-01';
-  if(!toEl.value)   toEl.value   = todayStr;
-
-  function fmtDate(dateStr){
-    const [y,m,d] = dateStr.split('-');
-    return `${m}/${d}/${y} 00:00:00`;
-  }
-
+  // Wide fixed range — returns all available stock regardless of date
   const params = new URLSearchParams({
     API      : GTECH_API_KEY,
-    DateFrom : fmtDate(fromEl.value),
-    DateTo   : fmtDate(toEl.value) .replace('00:00:00','23:59:59'),
+    DateFrom : '01/01/2000 00:00:00',
+    DateTo   : '12/31/2099 23:59:59',
     Location : locCode,
     Barcode  : bcEl?.value.trim() || '',
   });
   const url = GTECH_BASE + '?' + params.toString();
 
-  // UI: loading state
-  if(statusEl) statusEl.textContent = '⏳ Loading…';
-  if(bannerEl){ bannerEl.className='al-blue'; bannerEl.innerHTML='<span>⏳</span><span>Fetching live stock from G-Tech…</span>'; bannerEl.style.display='flex'; }
-  if(bodyEl)  bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Loading inventory…</td></tr>`;
-  if(summEl)  summEl.style.display='none';
+  // UI: loading
+  if(statusEl) statusEl.textContent = '⏳ Fetching…';
+  if(bannerEl){ bannerEl.className='al-blue'; bannerEl.innerHTML='<span>⏳</span><span>Loading stock data…</span>'; bannerEl.style.display='flex'; }
+  if(bodyEl)   bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
+  if(summEl)   summEl.style.display='none';
+
+  const t0 = Date.now();
 
   try{
     const res  = await fetch(url);
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
+
+    if(statusEl) statusEl.textContent = '⚙ Parsing…';
+
     let rows;
-    try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON response'); }
+    try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
     if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
 
-    // Normalise fields (handle any casing)
+    // Normalise
     const data = rows.map(r=>({
-      barcode      : r.barcode      ?? r.Barcode      ?? '',
-      location     : r.location     ?? r.Location     ?? '',
-      balanceQty   : parseFloat(r.balanceQty   ?? r.BalanceQty   ?? 0),
-      holdQty      : parseFloat(r.holdQty      ?? r.HoldQty      ?? 0),
-      totalStock   : parseFloat(r.totalStock   ?? r.TotalStock   ?? 0),
-      price        : parseFloat(r.price        ?? r.Price        ?? 0),
+      barcode        : String(r.barcode       ?? r.Barcode       ?? ''),
+      location       : String(r.location      ?? r.Location      ?? ''),
+      balanceQty     : parseFloat(r.balanceQty    ?? r.BalanceQty    ?? 0),
+      holdQty        : parseFloat(r.holdQty        ?? r.HoldQty        ?? 0),
+      totalStock     : parseFloat(r.totalStock     ?? r.TotalStock     ?? 0),
+      price          : parseFloat(r.price          ?? r.Price          ?? 0),
       discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
-      lastUpdated  : r.lastUpdated  ?? r.LastUpdated  ?? '',
+      lastUpdated    : String(r.lastUpdated   ?? r.LastUpdated   ?? ''),
     }));
 
-    // Filter zero stock if toggle off
-    const filtered = showZero ? data : data.filter(r=>r.totalStock>0);
+    _invData[oid] = data;
 
-    // Summary stats
-    const inStock  = data.filter(r=>r.totalStock>0).length;
-    const zeroStock= data.filter(r=>r.totalStock===0).length;
-    const totalBal = data.reduce((s,r)=>s+r.balanceQty,0);
-    const totalStk = data.reduce((s,r)=>s+r.totalStock,0);
+    // Stats
+    const inStock   = data.filter(r=>r.totalStock>0).length;
+    const zeroStock = data.filter(r=>r.totalStock===0).length;
+    const totalBal  = data.reduce((s,r)=>s+r.balanceQty, 0);
+    const totalStk  = data.reduce((s,r)=>s+r.totalStock, 0);
+    const ms        = Date.now()-t0;
 
     if(summEl){
       summEl.style.display='flex';
       summEl.innerHTML=[
-        {l:'Total SKUs', v:data.length,           c:'var(--bl)'},
-        {l:'In Stock',   v:inStock,                c:'var(--g)'},
-        {l:'Zero Stock', v:zeroStock,              c:'var(--r)'},
-        {l:'Balance Qty',v:totalBal.toFixed(0),   c:'#111'},
-        {l:'Total Stock',v:totalStk.toFixed(0),   c:'var(--or)'},
+        {l:'Total SKUs',  v:data.length,          c:'var(--bl)'},
+        {l:'In Stock',    v:inStock,               c:'var(--g)'},
+        {l:'Zero Stock',  v:zeroStock,             c:'var(--r)'},
+        {l:'Balance Qty', v:totalBal.toFixed(0),  c:'#111'},
+        {l:'Total Stock', v:totalStk.toFixed(0),  c:'var(--or)'},
+        {l:'Load Time',   v:ms+'ms',              c:'var(--m)'},
       ].map(s=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:7px;padding:8px 14px;text-align:center;min-width:90px">
         <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${s.c}">${s.v}</div>
         <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);margin-top:2px">${s.l}</div>
       </div>`).join('');
     }
 
-    // Render rows
-    if(bodyEl){
-      if(filtered.length===0){
-        bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No records found. Try adjusting the date range or enabling "Show zero stock".</td></tr>`;
-      } else {
-        bodyEl.innerHTML = filtered.map(r=>{
-          const imgUrl = getProductImage(r.barcode);
-          const imgHtml= imgUrl
-            ? `<img src="${imgUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--b)" onerror="this.style.display='none'">`
-            : `<div style="width:40px;height:40px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
-          const stCls  = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
-          const stTxt  = r.totalStock===0?'Out of Stock':r.balanceQty<5?'Low Stock':'In Stock';
-          const disc   = r.discountedPrice>0 ? `<span style="font-size:10px;color:var(--g)"> (${r.discountedPrice.toLocaleString()})</span>` : '';
-          return `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b)">${imgHtml}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-weight:500;font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(2)}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(2)}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(2)}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">PKR ${r.price.toLocaleString()}${disc}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
-          </tr>`;
-        }).join('');
-      }
-    }
+    // Render first page only
+    renderInvPage(oid, 0, showZero);
 
-    if(statusEl) statusEl.textContent = `✓ ${filtered.length} of ${data.length} rows · ${new Date().toLocaleTimeString()}`;
+    if(statusEl) statusEl.textContent = `✓ ${data.length} SKUs loaded in ${ms}ms · ${new Date().toLocaleTimeString()}`;
     if(bannerEl) bannerEl.style.display='none';
 
   } catch(err){
     if(statusEl) statusEl.textContent = '⚠ Error';
     if(bannerEl){
-      bannerEl.style.background='var(--rd)';
-      bannerEl.style.borderColor='var(--r)';
-      bannerEl.style.color='var(--r)';
-      bannerEl.innerHTML=`<span>⚠</span><span>${err.message}${err.message.includes('fetch')||err.message.includes('Failed')?'  — possible CORS issue. Try opening the URL directly in your browser.':''}</span>`;
+      bannerEl.style.cssText='background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px';
+      bannerEl.innerHTML=`<span>⚠</span><span>${err.message}${err.message.includes('fetch')||err.message.includes('Failed')?' — possible CORS issue. Try opening URL directly in browser.':''}</span>`;
     }
-    if(bodyEl) bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Failed to load inventory: ${err.message}</td></tr>`;
+    if(bodyEl) bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: ${err.message}</td></tr>`;
   }
 }
-function filterInv(q,oid){
-  const lq=q.toLowerCase();
-  document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
-    r.style.display=lq&&!r.textContent.toLowerCase().includes(lq)?'none':'';
-  });
+
+function renderInvPage(oid, page, showZero){
+  const data    = _invData[oid] || [];
+  const showZ   = showZero ?? document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  const filtered = showZ ? data : data.filter(r=>r.totalStock>0);
+  const start   = page * INV_PAGE_SIZE;
+  const slice   = filtered.slice(start, start + INV_PAGE_SIZE);
+  const bodyEl  = document.getElementById('invBody_'+oid);
+  if(!bodyEl) return;
+
+  if(filtered.length===0){
+    bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">
+      No records. ${!showZ?'Try enabling "Show zero stock".':''}</td></tr>`;
+    return;
+  }
+
+  const rows = slice.map(r=>{
+    const imgUrl  = getProductImage(r.barcode);
+    const imgHtml = imgUrl
+      ? `<img src="${imgUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b)" loading="lazy" onerror="this.style.display='none'">`
+      : `<div style="width:38px;height:38px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>`;
+    const stCls = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
+    const stTxt = r.totalStock===0?'Out':r.balanceQty<5?'Low':'OK';
+    const disc  = r.discountedPrice>0?`<br><span style="font-size:10px;color:var(--g)">${r.discountedPrice.toLocaleString()}</span>`:'';
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b)">${imgHtml}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px">PKR ${r.price.toLocaleString()}${disc}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Pagination footer
+  const totalPages = Math.ceil(filtered.length / INV_PAGE_SIZE);
+  const pageBar = totalPages > 1 ? `
+    <tr><td colspan="8" style="padding:10px 12px;background:var(--s);border-top:1px solid var(--b)">
+      <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px">
+        <span style="color:var(--m)">Page ${page+1} of ${totalPages} · showing ${start+1}–${Math.min(start+INV_PAGE_SIZE,filtered.length)} of ${filtered.length}</span>
+        <span style="flex:1"></span>
+        ${page>0?`<button class="btn btn-out btn-sm" onclick="renderInvPage('${oid}',${page-1})">← Prev</button>`:''}
+        ${page<totalPages-1?`<button class="btn btn-dark btn-sm" onclick="renderInvPage('${oid}',${page+1})">Next →</button>`:''}
+      </div>
+    </td></tr>` : '';
+
+  bodyEl.innerHTML = rows + pageBar;
+}
+function filterInv(q, oid){
+  const data = _invData[oid];
+  if(!data){ // fallback DOM search if no cached data yet
+    const lq=q.toLowerCase();
+    document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
+      r.style.display=lq&&!r.textContent.toLowerCase().includes(lq)?'none':'';
+    });
+    return;
+  }
+  const lq = q.toLowerCase().trim();
+  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  const bodyEl = document.getElementById('invBody_'+oid);
+  if(!bodyEl) return;
+  const filtered = data
+    .filter(r => !lq || r.barcode.toLowerCase().includes(lq) || getProductTitle(r.barcode).toLowerCase().includes(lq))
+    .filter(r => showZero || r.totalStock > 0);
+  // Temporarily override _invData for renderInvPage
+  const orig = _invData[oid];
+  _invData[oid] = filtered;
+  renderInvPage(oid, 0, showZero);
+  _invData[oid] = orig;
 }
 function saveTargets(){
   const m=document.getElementById('tgtMonth')?.value||new Date().toISOString().slice(0,7);

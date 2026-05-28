@@ -1032,10 +1032,7 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  // Use current month only — fast and accurate
-  const now      = new Date();
-  const firstOfMonth = `01/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} 00:00:00`;
-  const dateFrom = firstOfMonth;
+  const dateFrom = '12/03/2020 12:00:00';
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 

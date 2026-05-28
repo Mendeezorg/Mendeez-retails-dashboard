@@ -520,6 +520,7 @@ let _skuImageMap   = {};   // sku → image url
 let _skuTitleMap   = {};   // sku → product title
 let _shopifyLoaded = false;
 const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
+const GTECH_PROXY    = 'https://mendeez-shopify.divine-mouse-0258.workers.dev/gtech';
 const SHOPIFY_STORE  = 'mendeez.myshopify.com';
 let _shopifyToken = '';
 let _shopifyStore = 'mendeez.myshopify.com'; // fixed store name
@@ -725,7 +726,7 @@ function buildOutletHTML(o){
       <input type="text" id="invBarcode_${o.id}" class="dinput" placeholder="Filter by barcode (optional)" style="width:220px;font-size:11px">
       <button class="btn btn-dark btn-sm" onclick="fetchGtechInventory('${o.id}')">▶ Load Inventory</button>
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;margin-left:4px">
-        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111" onchange="renderInvPage('${o.id}',0)"> Show zero stock
+        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111" checked onchange="renderInvPage('${o.id}',0)"> Show zero stock
       </label>
       <span id="invStatus_${o.id}" style="margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--m)"></span>
     </div>
@@ -962,17 +963,21 @@ async function fetchGtechInventory(oid){
   const bannerEl = document.getElementById('invBanner_'+oid);
   const bodyEl   = document.getElementById('invBody_'+oid);
   const summEl   = document.getElementById('invSummary_'+oid);
-  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? true;
 
-  // Wide fixed range — returns all available stock regardless of date
-  const params = new URLSearchParams({
-    API      : GTECH_API_KEY,
-    DateFrom : '01/01/2000 00:00:00',
-    DateTo   : '12/31/2099 23:59:59',
-    Location : locCode,
-    Barcode  : bcEl?.value.trim() || '',
-  });
-  const url = GTECH_BASE + '?' + params.toString();
+  // Build date params manually to avoid encoding issues
+  const today  = new Date();
+  const mm     = String(today.getMonth()+1).padStart(2,'0');
+  const dd     = String(today.getDate()).padStart(2,'0');
+  const yyyy   = today.getFullYear();
+  const todayFmt = `${mm}/${dd}/${yyyy}`;
+
+  const dateFrom = '05/01/2026 00:00:00';
+  const dateTo   = `${todayFmt} 23:59:59`;
+  const barcode  = bcEl?.value.trim() || '';
+
+  // Build URL manually — do NOT use URLSearchParams (it encodes spaces as + breaking the API)
+  const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
 
   // UI: loading
   if(statusEl) statusEl.textContent = '⏳ Fetching…';
@@ -1046,8 +1051,8 @@ async function fetchGtechInventory(oid){
 }
 
 function renderInvPage(oid, page, showZero){
-  const data    = _invData[oid] || [];
-  const showZ   = showZero ?? document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  const data     = _invData[oid] || [];
+  const showZ    = showZero !== undefined ? showZero : (document.getElementById('invShowZero_'+oid)?.checked ?? true);
   const filtered = showZ ? data : data.filter(r=>r.totalStock>0);
   const start   = page * INV_PAGE_SIZE;
   const slice   = filtered.slice(start, start + INV_PAGE_SIZE);

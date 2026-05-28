@@ -408,8 +408,8 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-    // Auto-load inventory for all outlets in background
-    setTimeout(()=>{ OUTLETS.forEach(o => fetchGtechInventory(o.id)); }, 1000);
+    // Auto-load inventory only for the first outlet tab
+    setTimeout(()=>{ fetchGtechInventory(OUTLETS[0].id); }, 1500);
   },0);
 }
 
@@ -454,6 +454,7 @@ function buildTabs(){
     d.className='tab';
     d.textContent=o.short;
     d.dataset.pid='panel-'+o.id;
+    d.dataset.oid=o.id;
     d.onclick=()=>switchTab(d);
     bar.appendChild(d);
   });
@@ -478,6 +479,11 @@ function switchTab(el){
   const p=document.getElementById(el.dataset.pid);
   if(p)p.classList.add('active');
   if(el.dataset.pid==='panel-cfg') setTimeout(populateSettingsFields,0);
+  // Auto-load inventory when switching to an outlet tab
+  const oid = el.dataset.oid;
+  if(oid && !_invData[oid]){
+    setTimeout(()=> fetchGtechInventory(oid), 100);
+  }
 }
 
 // ══ PANELS ══
@@ -1007,7 +1013,7 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  const dateFrom = `${todayFmt} 00:00:00`;
+  const dateFrom = '01/01/2024 00:00:00';
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 

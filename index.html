@@ -1016,47 +1016,125 @@ async function runInvQueue(){
 const INV_PAGE_SIZE = 100; // rows rendered at a time
 let _invData = {}; // oid → full normalised array
 
+// Split [dateFrom, dateTo] into yearly sub-ranges to avoid 524 timeouts on large outlets.
+// Each chunk covers at most one calendar year so the upstream response stays under ~25s.
+function buildDateChunks(fromDateStr, toDateStr){
+  // fromDateStr / toDateStr: 'MM/DD/YYYY' (G-Tech format)
+  function parseGtech(s){ const [m,d,y]=s.split('/'); return new Date(+y,+m-1,+d); }
+  function fmtGtech(dt){ return `${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}/${dt.getFullYear()}`; }
+
+  const start = parseGtech(fromDateStr);
+  const end   = parseGtech(toDateStr);
+  const chunks = [];
+  let cur = new Date(start);
+
+  while(cur <= end){
+    const chunkEnd = new Date(cur.getFullYear(), 11, 31); // Dec 31 of current year
+    const effectiveEnd = chunkEnd < end ? chunkEnd : end;
+    chunks.push({
+      from: fmtGtech(cur) + ' 00:00:00',
+      to  : fmtGtech(effectiveEnd) + ' 23:59:59',
+    });
+    cur = new Date(effectiveEnd.getFullYear() + 1, 0, 1); // Jan 1 next year
+  }
+  return chunks;
+}
+
+async function fetchGtechChunk(locCode, chunk, apiKey){
+  const url = `${GTECH_PROXY}?API=${apiKey}&DateFrom=${encodeURIComponent(chunk.from)}&DateTo=${encodeURIComponent(chunk.to)}&Location=${encodeURIComponent(locCode)}`;
+  const res  = await fetch(url);
+  if(!res.ok){
+    const body = await res.text().catch(()=>'');
+    // Distinguish clean timeout (504) from other errors
+    if(res.status === 504){ throw new Error('TIMEOUT'); }
+    throw new Error('HTTP ' + res.status);
+  }
+  const text = await res.text();
+  let rows;
+  try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
+  if(rows && rows.error === 'TIMEOUT') throw new Error('TIMEOUT');
+  if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
+  return rows;
+}
+
 async function fetchGtechInventory(oid){
   const locCode  = GTECH_LOC[oid] || '';
-  const bcEl     = document.getElementById('invBarcode_'+oid);
   const statusEl = document.getElementById('invStatus_'+oid);
   const bannerEl = document.getElementById('invBanner_'+oid);
   const bodyEl   = document.getElementById('invBody_'+oid);
   const summEl   = document.getElementById('invSummary_'+oid);
-  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? true;
 
-  // Build date params manually to avoid encoding issues
+  // Build date range
   const today  = new Date();
   const mm     = String(today.getMonth()+1).padStart(2,'0');
   const dd     = String(today.getDate()).padStart(2,'0');
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
-
-  const dateFrom = '12/03/2020 12:00:00';
-  const dateTo   = `${todayFmt} 23:59:59`;
-  const barcode  = bcEl?.value.trim() || '';
-
-  const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
+  const dateFrom = '12/03/2020';
+  const dateTo   = todayFmt;
+  const chunks   = buildDateChunks(dateFrom, dateTo);
+  const totalChunks = chunks.length;
 
   // UI: loading
+  const setBanner = (html, cls='al-blue') => {
+    if(!bannerEl) return;
+    bannerEl.className = '';
+    bannerEl.style.cssText = cls === 'al-blue'
+      ? 'background:var(--bld);border:1px solid #bfdbfe;color:var(--bl);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px'
+      : 'background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px';
+    bannerEl.innerHTML = html;
+  };
+
   if(statusEl) statusEl.textContent = '⏳ Fetching…';
-  if(bannerEl){ bannerEl.className='al-blue'; bannerEl.innerHTML='<span>⏳</span><span>Loading stock data…</span>'; bannerEl.style.display='flex'; }
+  setBanner(`<span>⏳</span><span>Loading stock data (chunk 1/${totalChunks})…</span>`);
   if(bodyEl)   bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
   if(summEl)   summEl.style.display='none';
 
   const t0 = Date.now();
+  const allRows = [];
+  let failedChunks = 0;
 
-  try{
-    const res  = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+  for(let i = 0; i < chunks.length; i++){
+    const chunk = chunks[i];
+    if(statusEl) statusEl.textContent = `⏳ Chunk ${i+1}/${totalChunks}…`;
+    setBanner(`<span>⏳</span><span>Fetching ${chunk.from.slice(6,10)} data… (${i+1}/${totalChunks})</span>`);
 
-    if(statusEl) statusEl.textContent = '⚙ Parsing…';
+    let attempt = 0;
+    let success = false;
+    // Retry once with same chunk on timeout (transient), then skip
+    while(attempt < 2 && !success){
+      try{
+        const rows = await fetchGtechChunk(locCode, chunk, GTECH_API_KEY);
+        allRows.push(...rows);
+        success = true;
+      } catch(err){
+        attempt++;
+        if(attempt >= 2){
+          console.warn(`G-Tech chunk ${i+1} failed after retry: ${err.message}`);
+          failedChunks++;
+        } else {
+          console.warn(`G-Tech chunk ${i+1} attempt ${attempt} failed (${err.message}), retrying…`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+  }
 
-    let rows;
-    try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
-    if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
+  if(allRows.length === 0 && failedChunks === totalChunks){
+    throw new Error(`All ${totalChunks} date chunks timed out or failed — G-Tech API unreachable`);
+  }
 
+  if(statusEl) statusEl.textContent = '⚙ Parsing…';
+
+  // Warn user if some chunks failed but we got partial data
+  if(failedChunks > 0){
+    setBanner(`<span>⚠</span><span>${failedChunks} of ${totalChunks} date chunks failed — showing partial data. Try refreshing.</span>`, 'err');
+    setTimeout(()=>{ if(bannerEl) bannerEl.style.display='none'; }, 6000);
+  }
+
+  const rows = allRows;
+
+  try {
     // Normalise
     const rawData = rows.map(r=>({
       barcode        : String(r.barcode       ?? r.Barcode       ?? ''),
@@ -1099,7 +1177,8 @@ async function fetchGtechInventory(oid){
         {l:'Zero Stock',  v:zeroStock,             c:'var(--r)'},
         {l:'Balance Qty', v:totalBal.toFixed(0),  c:'#111'},
         {l:'Total Stock', v:totalStk.toFixed(0),  c:'var(--or)'},
-        {l:'Load Time',   v:ms+'ms',              c:'var(--m)'},
+        {l:'Load Time',   v:ms<60000?ms+'ms':Math.round(ms/1000)+'s', c:'var(--m)'},
+        ...(failedChunks > 0 ? [{l:'Partial Data', v:failedChunks+' chunks failed', c:'var(--r)'}] : []),
       ].map(s=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:7px;padding:8px 14px;text-align:center;min-width:90px">
         <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${s.c}">${s.v}</div>
         <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);margin-top:2px">${s.l}</div>

@@ -396,10 +396,10 @@ function doLogin(){
   loadSettings();
   buildTabs();
   buildPanels();
-  loadShopifySkuMap(); // Pre-load product images
   // Auto-load Shopify image map if token already saved
   const savedToken = localStorage.getItem('mndz_shopify_token');
-  if(savedToken){ _shopifyToken = savedToken; loadShopifySkuMap(); }
+  if(savedToken){ _shopifyToken = savedToken; }
+  loadShopifySkuMap(); // single call — loads all products in background
   setTimeout(()=>{
     updateAllTaskLabels();
     // Set default report period to today
@@ -529,30 +529,29 @@ let _shopifyStore = 'mendeez.myshopify.com'; // fixed store name
 let _barcodeImageMap = {}; // barcode → image url
 let _barcodeTitleMap = {}; // barcode → product title
 
+let _shopifyLoading = false; // prevent duplicate calls
+
 async function loadShopifySkuMap(){
-  if(_shopifyLoaded) return;
+  if(_shopifyLoaded || _shopifyLoading) return;
   const token = _shopifyToken || '';
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
+  _shopifyLoading = true;
   console.log('🛍 Loading Shopify product images...');
 
-  // Show a subtle loading indicator in all outlet tabs
-  document.querySelectorAll('[id^="invStatus_"]').forEach(el => {
-    if(!el.textContent) el.textContent = '🛍 Loading images...';
-  });
-
-  let lastId   = null;
-  let hasMore  = true;
+  let lastId      = null;
   let totalLoaded = 0;
-  const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
+  const stripped  = (s) => s ? String(s).replace(/^0+/,'') : '';
 
-  while(hasMore){
+  while(true){
     try{
       const ep  = '/products.json?limit=250&fields=title,images,variants' + (lastId ? '&since_id='+lastId : '');
       const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com') + '&token=' + encodeURIComponent(token) + '&ep=' + encodeURIComponent(ep);
       const r   = await fetch(url);
       const d   = await r.json();
       const products = d.products || [];
+
+      if(products.length === 0) break; // no more pages — stop
 
       products.forEach(p => {
         const imgUrl = p.images?.[0]?.src || '';
@@ -570,28 +569,25 @@ async function loadShopifySkuMap(){
             _barcodeTitleMap[bc]  = p.title; _barcodeTitleMap[bcS]  = p.title;
           }
         });
-        if(p.id) lastId = p.id;
+        lastId = p.id; // track last product id for next page
       });
 
       totalLoaded += products.length;
-      hasMore = products.length === 250;
       console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
+
+      if(products.length < 250) break; // last page — stop
 
     } catch(e){
       console.log('Shopify load error:', e.message);
-      hasMore = false;
+      break;
     }
   }
 
-  _shopifyLoaded = true;
+  _shopifyLoaded  = true;
+  _shopifyLoading = false;
   console.log(`✅ Shopify fully loaded: ${totalLoaded} products, ${Object.keys(_skuImageMap).length} SKUs mapped`);
 
-  // Clear loading indicators
-  document.querySelectorAll('[id^="invStatus_"]').forEach(el => {
-    if(el.textContent === '🛍 Loading images...') el.textContent = '';
-  });
-
-  // Re-render any already-loaded inventory tables to show images
+  // Re-render any already-loaded inventory to show images
   Object.keys(_invData).forEach(oid => {
     if(_invData[oid]?.length) renderInvPage(oid, 0);
   });
@@ -1091,8 +1087,16 @@ function renderInvPage(oid, page, showZero){
 
   const rows = slice.map(r=>{
     const imgUrl  = getProductImage(r.barcode);
+    const title   = (getProductTitle(r.barcode)||'').replace(/'/g,"\\'");
+    const imgSrc  = imgUrl.replace(/'/g,"\\'");
     const imgHtml = imgUrl
-      ? `<img src="${imgUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b)" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img src="${imgUrl}" 
+           style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b);cursor:zoom-in;transition:transform .15s" 
+           loading="lazy"
+           onmouseover="this.style.transform='scale(1.2)'"
+           onmouseout="this.style.transform='scale(1)'"
+           onclick="openImgLightbox('${imgSrc}','${title}')"
+           onerror="this.outerHTML='<div style=&quot;width:38px;height:38px;border-radius:5px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:16px&quot;>📦</div>'">`
       : `<div style="width:38px;height:38px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>`;
     const stCls = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
     const stTxt = r.totalStock===0?'Out':r.balanceQty<5?'Low':'OK';
@@ -1124,6 +1128,46 @@ function renderInvPage(oid, page, showZero){
   bodyEl.innerHTML = rows + pageBar;
 }
 function filterInv(q, oid){
+  const data = _invData[oid];
+  if(!data){
+    const lq = q.toLowerCase();
+    document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
+      r.style.display = lq && !r.textContent.toLowerCase().includes(lq) ? 'none' : '';
+    });
+    return;
+  }
+  const lq      = q.toLowerCase().trim();
+  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? true;
+  const orig    = _invData[oid];
+  const filtered = orig
+    .filter(r => !lq || r.barcode.toLowerCase().includes(lq) || getProductTitle(r.barcode).toLowerCase().includes(lq))
+    .filter(r => showZero || r.totalStock > 0);
+  _invData[oid] = filtered;
+  renderInvPage(oid, 0, showZero);
+  _invData[oid] = orig;
+}
+
+function openImgLightbox(url, title){
+  let lb = document.getElementById('imgLightbox');
+  if(!lb){
+    lb = document.createElement('div');
+    lb.id = 'imgLightbox';
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out;padding:20px';
+    lb.onclick = ()=> lb.style.display='none';
+    lb.innerHTML = `
+      <div style="max-width:90vw;max-height:90vh;text-align:center">
+        <div id="lbTitle" style="color:#fff;font-size:14px;font-weight:600;margin-bottom:12px;font-family:var(--mono)"></div>
+        <img id="lbImg" style="max-width:100%;max-height:80vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <div style="color:#888;font-size:11px;margin-top:12px">Click anywhere to close</div>
+      </div>`;
+    document.body.appendChild(lb);
+  }
+  document.getElementById('lbTitle').textContent = title;
+  document.getElementById('lbImg').src = url;
+  lb.style.display = 'flex';
+}
+
+
   const data = _invData[oid];
   if(!data){ // fallback DOM search if no cached data yet
     const lq=q.toLowerCase();

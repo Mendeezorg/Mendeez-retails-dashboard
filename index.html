@@ -529,7 +529,7 @@ let _shopifyStore = 'mendeez.myshopify.com'; // fixed store name
 let _barcodeImageMap = {}; // barcode → image url
 let _barcodeTitleMap = {}; // barcode → product title
 
-let _shopifyLoading = false; // prevent duplicate calls
+let _shopifyLoading = false;
 
 async function loadShopifySkuMap(){
   if(_shopifyLoaded || _shopifyLoading) return;
@@ -537,60 +537,71 @@ async function loadShopifySkuMap(){
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
   _shopifyLoading = true;
-  console.log('🛍 Loading Shopify product images...');
+  console.log('🛍 Loading Shopify product images in parallel...');
 
-  let lastId      = null;
-  let totalLoaded = 0;
-  const stripped  = (s) => s ? String(s).replace(/^0+/,'') : '';
+  const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
 
-  while(true){
-    try{
-      const ep  = '/products.json?limit=250&fields=title,images,variants' + (lastId ? '&since_id='+lastId : '');
-      const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com') + '&token=' + encodeURIComponent(token) + '&ep=' + encodeURIComponent(ep);
-      const r   = await fetch(url);
-      const d   = await r.json();
-      const products = d.products || [];
-
-      if(products.length === 0) break; // no more pages — stop
-
-      products.forEach(p => {
-        const imgUrl = p.images?.[0]?.src || '';
-        (p.variants || []).forEach(v => {
-          if(v.sku){
-            const sku = String(v.sku).trim();
-            const skuS = stripped(sku);
-            _skuImageMap[sku]  = imgUrl; _skuImageMap[skuS]  = imgUrl;
-            _skuTitleMap[sku]  = p.title; _skuTitleMap[skuS]  = p.title;
-          }
-          if(v.barcode){
-            const bc  = String(v.barcode).trim();
-            const bcS = stripped(bc);
-            _barcodeImageMap[bc]  = imgUrl; _barcodeImageMap[bcS]  = imgUrl;
-            _barcodeTitleMap[bc]  = p.title; _barcodeTitleMap[bcS]  = p.title;
-          }
-        });
-        lastId = p.id; // track last product id for next page
+  function processProducts(products){
+    products.forEach(p => {
+      const imgUrl = p.images?.[0]?.src || '';
+      (p.variants || []).forEach(v => {
+        if(v.sku){
+          const sku = String(v.sku).trim();
+          const skuS = stripped(sku);
+          _skuImageMap[sku]  = imgUrl; _skuImageMap[skuS]  = imgUrl;
+          _skuTitleMap[sku]  = p.title; _skuTitleMap[skuS]  = p.title;
+        }
+        if(v.barcode){
+          const bc  = String(v.barcode).trim();
+          const bcS = stripped(bc);
+          _barcodeImageMap[bc]  = imgUrl; _barcodeImageMap[bcS]  = imgUrl;
+          _barcodeTitleMap[bc]  = p.title; _barcodeTitleMap[bcS]  = p.title;
+        }
       });
-
-      totalLoaded += products.length;
-      console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
-
-      if(products.length < 250) break; // last page — stop
-
-    } catch(e){
-      console.log('Shopify load error:', e.message);
-      break;
-    }
+    });
   }
 
-  _shopifyLoaded  = true;
-  _shopifyLoading = false;
-  console.log(`✅ Shopify fully loaded: ${totalLoaded} products, ${Object.keys(_skuImageMap).length} SKUs mapped`);
+  async function fetchPage(page){
+    const ep  = `/products.json?limit=250&page=${page}&fields=title,images,variants`;
+    const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com') + '&token=' + encodeURIComponent(token) + '&ep=' + encodeURIComponent(ep);
+    const r   = await fetch(url);
+    const d   = await r.json();
+    return d.products || [];
+  }
 
-  // Re-render any already-loaded inventory to show images
-  Object.keys(_invData).forEach(oid => {
-    if(_invData[oid]?.length) renderInvPage(oid, 0);
-  });
+  try{
+    // Fetch page 1 first to know total count
+    const first = await fetchPage(1);
+    processProducts(first);
+
+    if(first.length === 250){
+      // Calculate remaining pages (3252 products / 250 = 14 pages)
+      const totalPages = 14; // safe upper bound for mendeez
+      const pageNums   = Array.from({length: totalPages - 1}, (_, i) => i + 2);
+
+      // Fetch all remaining pages in parallel (batches of 5 to avoid rate limits)
+      for(let i = 0; i < pageNums.length; i += 5){
+        const batch   = pageNums.slice(i, i + 5);
+        const results = await Promise.all(batch.map(p => fetchPage(p)));
+        results.forEach(products => processProducts(products));
+        console.log(`🛍 Shopify: batch ${Math.floor(i/5)+1} done, ${Object.keys(_skuImageMap).length} SKUs mapped...`);
+      }
+    }
+
+    _shopifyLoaded  = true;
+    _shopifyLoading = false;
+    const total = Object.keys(_skuImageMap).length;
+    console.log(`✅ Shopify fully loaded: ${total} SKUs mapped`);
+
+    // Re-render open inventory tables with images
+    Object.keys(_invData).forEach(oid => {
+      if(_invData[oid]?.length) renderInvPage(oid, 0);
+    });
+
+  } catch(e){
+    console.log('Shopify load error:', e.message);
+    _shopifyLoading = false;
+  }
 }
 
 // Lookup by barcode first (G-Tech), fallback to SKU, try with/without leading zeros

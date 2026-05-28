@@ -408,8 +408,9 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-    // Auto-load inventory only for the first outlet tab
-    setTimeout(()=>{ fetchGtechInventory(OUTLETS[0].id); }, 1500);
+    // Auto-load inventory for current outlet only when tab is clicked
+    // First outlet loads automatically after Shopify is ready
+    setTimeout(()=>{ fetchGtechInventory(OUTLETS[0].id); }, 2000);
   },0);
 }
 
@@ -1013,7 +1014,14 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  const dateFrom = '01/01/2024 00:00:00';
+  // Use last 30 days — enough to get current stock without too much history
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - 30);
+  const fmm = String(fromDate.getMonth()+1).padStart(2,'0');
+  const fdd = String(fromDate.getDate()).padStart(2,'0');
+  const fyyyy = fromDate.getFullYear();
+
+  const dateFrom = `${fmm}/${fdd}/${fyyyy} 00:00:00`;
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 

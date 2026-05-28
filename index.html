@@ -586,17 +586,17 @@ async function loadShopifySkuMap(){
 function getProductImage(barcodeOrSku){
   if(!barcodeOrSku) return '';
   const k  = String(barcodeOrSku).trim();
-  const ks = k.replace(/^0+/,''); // stripped
-  return _barcodeImageMap[k] || _barcodeImageMap[ks]
-      || _skuImageMap[k]     || _skuImageMap[ks] || '';
+  const ks = k.replace(/^0+/,''); // strip leading zeros — G-Tech uses 0011022, Shopify uses 11022
+  return _skuImageMap[ks]     || _skuImageMap[k]
+      || _barcodeImageMap[ks] || _barcodeImageMap[k] || '';
 }
 
 function getProductTitle(barcodeOrSku){
   if(!barcodeOrSku) return '';
   const k  = String(barcodeOrSku).trim();
   const ks = k.replace(/^0+/,'');
-  return _barcodeTitleMap[k] || _barcodeTitleMap[ks]
-      || _skuTitleMap[k]     || _skuTitleMap[ks] || '';
+  return _skuTitleMap[ks]     || _skuTitleMap[k]
+      || _barcodeTitleMap[ks] || _barcodeTitleMap[k] || '';
 }
 
 // Render inventory row with image

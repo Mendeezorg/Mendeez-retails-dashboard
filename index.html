@@ -402,14 +402,14 @@ function doLogin(){
   loadShopifySkuMap(); // single call — loads all products in background
   setTimeout(()=>{
     updateAllTaskLabels();
-    // Set default report period to today
     const today=new Date().toISOString().slice(0,10);
     const rf=document.getElementById('rptFrom');
     const rt=document.getElementById('rptTo');
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-
+    // Auto-load inventory for all outlets in background
+    setTimeout(()=>{ OUTLETS.forEach(o => fetchGtechInventory(o.id)); }, 1000);
   },0);
 }
 
@@ -537,14 +537,14 @@ async function loadShopifySkuMap(){
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
   _shopifyLoading = true;
-  console.log('🛍 Loading Shopify product images...');
+  console.log('🛍 Loading all Shopify products via GraphQL...');
 
   const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
 
-  function processProducts(products){
-    products.forEach(p => {
-      const imgUrl = p.images?.[0]?.src || '';
-      (p.variants || []).forEach(v => {
+  function processEdges(edges){
+    edges.forEach(({ node: p }) => {
+      const imgUrl = p.featuredImage?.url || '';
+      (p.variants?.edges || []).forEach(({ node: v }) => {
         if(v.sku){
           const sku = String(v.sku).trim();
           const skuS = stripped(sku);
@@ -561,31 +561,40 @@ async function loadShopifySkuMap(){
     });
   }
 
-  async function fetchEp(ep){
-    const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com')
-              + '&token=' + encodeURIComponent(token)
-              + '&ep='    + encodeURIComponent(ep);
-    const r = await fetch(url);
-    const d = await r.json();
-    return d.products || [];
-  }
+  const query = (cursor) => JSON.stringify({ query: `{
+    products(first: 250${cursor ? `, after: "${cursor}"` : ''}) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        node {
+          title
+          featuredImage { url }
+          variants(first: 100) {
+            edges { node { sku barcode } }
+          }
+        }
+      }
+    }
+  }`});
 
   try{
+    let cursor      = null;
+    let hasNextPage = true;
     let totalLoaded = 0;
-    let sinceId     = null;
 
-    while(true){
-      const ep       = '/products.json?limit=250&fields=id,title,images,variants' + (sinceId ? '&since_id='+sinceId : '');
-      const products = await fetchEp(ep);
+    while(hasNextPage){
+      const res  = await fetch(
+        `${SHOPIFY_WORKER}/graphql?store=mendeez.myshopify.com&token=${encodeURIComponent(token)}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: query(cursor) }
+      );
+      const d    = await res.json();
+      const products = d?.data?.products;
+      if(!products) break;
 
-      if(!products.length) break;
-
-      processProducts(products);
-      totalLoaded += products.length;
-      sinceId = products[products.length - 1].id; // last product id for next page
+      processEdges(products.edges);
+      totalLoaded  += products.edges.length;
+      hasNextPage   = products.pageInfo.hasNextPage;
+      cursor        = products.pageInfo.endCursor;
       console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
-
-      if(products.length < 250) break; // last page
     }
 
     _shopifyLoaded  = true;
@@ -597,7 +606,7 @@ async function loadShopifySkuMap(){
     });
 
   } catch(e){
-    console.log('Shopify load error:', e.message);
+    console.log('Shopify GraphQL error:', e.message);
     _shopifyLoading = false;
   }
 }
@@ -606,9 +615,11 @@ async function loadShopifySkuMap(){
 function getProductImage(barcodeOrSku){
   if(!barcodeOrSku) return '';
   const k  = String(barcodeOrSku).trim();
-  const ks = k.replace(/^0+/,''); // strip leading zeros — G-Tech uses 0011022, Shopify uses 11022
-  return _skuImageMap[ks]     || _skuImageMap[k]
-      || _barcodeImageMap[ks] || _barcodeImageMap[k] || '';
+  const ks = k.replace(/^0+/,'');
+  const url = _skuImageMap[ks]     || _skuImageMap[k]
+           || _barcodeImageMap[ks] || _barcodeImageMap[k] || '';
+  // Remove Shopify image size suffix to get full quality (e.g. _100x100 → removed)
+  return url.replace(/_(pico|icon|thumb|small|compact|medium|large|grande|original|master|\d+x\d*)(\.[a-z]+)(\?|$)/, '$2$3');
 }
 
 function getProductTitle(barcodeOrSku){
@@ -748,25 +759,26 @@ function buildOutletHTML(o){
   <div class="card">
     <div class="sh" style="flex-wrap:wrap;gap:8px">
       <div class="card-title" style="margin:0"><span class="dot" style="background:var(--bl)"></span>Stock & Inventory</div>
-      <input style="background:var(--s);border:1px solid var(--b);color:#111;padding:6px 12px;border-radius:6px;font-family:var(--mono);font-size:12px;outline:none;width:200px" placeholder="Search barcode or name..." oninput="filterInv(this.value,'${o.id}')">
+      <span id="invStatus_${o.id}" style="font-size:11px;font-family:var(--mono);color:var(--m)"></span>
     </div>
-    <!-- G-Tech Fetch Bar -->
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--s);border:1px solid var(--b);border-radius:7px;padding:10px 12px;margin-bottom:12px">
-      <input type="text" id="invBarcode_${o.id}" class="dinput" placeholder="Filter by barcode (optional)" style="width:220px;font-size:11px">
-      <button class="btn btn-dark btn-sm" onclick="fetchGtechInventory('${o.id}')">▶ Load Inventory</button>
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;margin-left:4px">
-        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111" checked onchange="renderInvPage('${o.id}',0)"> Show zero stock
+    <!-- Search bar -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input type="text" id="invSearch_${o.id}"
+        style="flex:1;background:var(--s);border:1px solid var(--b);color:#111;padding:10px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;outline:none"
+        placeholder="🔍 Search by barcode or product name..."
+        oninput="searchInv(this.value,'${o.id}')">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;white-space:nowrap">
+        <input type="checkbox" id="invShowZero_${o.id}" style="accent-color:#111" onchange="searchInv(document.getElementById('invSearch_${o.id}').value,'${o.id}')"> Zero stock
       </label>
-      <span id="invStatus_${o.id}" style="margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--m)"></span>
     </div>
     <!-- Summary pills -->
     <div id="invSummary_${o.id}" style="display:none;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
     <!-- Banner -->
-    <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Click <strong>Load Inventory</strong> to fetch current stock for this outlet.</span></div>
+    <div id="invBanner_${o.id}" class="al-blue"><span>⏳</span><span>Loading inventory from G-Tech...</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
         <thead><tr><th style="width:52px"></th><th>Barcode</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
-        <tbody id="invBody_${o.id}"></tbody>
+        <tbody id="invBody_${o.id}"><tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Search a barcode or product name above</td></tr></tbody>
       </table>
     </div>
   </div>`;
@@ -1057,11 +1069,9 @@ async function fetchGtechInventory(oid){
       </div>`).join('');
     }
 
-    // Render first page only
-    renderInvPage(oid, 0, showZero);
-
-    if(statusEl) statusEl.textContent = `✓ ${data.length} SKUs loaded in ${ms}ms · ${new Date().toLocaleTimeString()}`;
+    if(statusEl) statusEl.textContent = `✓ ${data.length} SKUs · ${new Date().toLocaleTimeString()}`;
     if(bannerEl) bannerEl.style.display='none';
+    // Don't auto-render — wait for search
 
   } catch(err){
     if(statusEl) statusEl.textContent = '⚠ Error';
@@ -1130,24 +1140,80 @@ function renderInvPage(oid, page, showZero){
 
   bodyEl.innerHTML = rows + pageBar;
 }
-function filterInv(q, oid){
-  const data = _invData[oid];
-  if(!data){
-    const lq = q.toLowerCase();
-    document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
-      r.style.display = lq && !r.textContent.toLowerCase().includes(lq) ? 'none' : '';
-    });
+function searchInv(q, oid){
+  const data     = _invData[oid];
+  const bodyEl   = document.getElementById('invBody_'+oid);
+  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  if(!bodyEl) return;
+
+  // Empty search — show prompt
+  if(!q || q.trim().length < 2){
+    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Search a barcode or product name above</td></tr>`;
     return;
   }
-  const lq      = q.toLowerCase().trim();
-  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? true;
-  const orig    = _invData[oid];
-  const filtered = orig
-    .filter(r => !lq || r.barcode.toLowerCase().includes(lq) || getProductTitle(r.barcode).toLowerCase().includes(lq))
-    .filter(r => showZero || r.totalStock > 0);
-  _invData[oid] = filtered;
-  renderInvPage(oid, 0, showZero);
-  _invData[oid] = orig;
+
+  if(!data){
+    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Inventory still loading, please wait...</td></tr>`;
+    return;
+  }
+
+  const lq = q.toLowerCase().trim();
+
+  // Find all matching records — by barcode OR by product title (all variants)
+  // First find matching titles
+  const matchedTitles = new Set(
+    data
+      .filter(r => {
+        const title = getProductTitle(r.barcode).toLowerCase();
+        return r.barcode.toLowerCase().includes(lq) || title.includes(lq);
+      })
+      .map(r => getProductTitle(r.barcode))
+      .filter(t => t)
+  );
+
+  // Then get ALL variants with those titles (all sizes/colors of matched products)
+  const filtered = data.filter(r => {
+    const title = getProductTitle(r.barcode);
+    const barcodeMatch = r.barcode.toLowerCase().includes(lq);
+    const titleMatch   = matchedTitles.has(title);
+    const stockOk      = showZero || r.totalStock > 0;
+    return (barcodeMatch || titleMatch) && stockOk;
+  });
+
+  if(filtered.length === 0){
+    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No results found for "<strong>${q}</strong>"</td></tr>`;
+    return;
+  }
+
+  const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
+
+  bodyEl.innerHTML = filtered.map(r => {
+    const imgUrl  = getProductImage(r.barcode);
+    const title   = (getProductTitle(r.barcode)||'').replace(/'/g,"\\'");
+    const imgSrc  = imgUrl.replace(/'/g,"\\'");
+    const imgHtml = imgUrl
+      ? `<img src="${imgUrl}"
+           style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b);cursor:zoom-in;transition:transform .15s"
+           loading="lazy"
+           onmouseover="this.style.transform='scale(1.2)'"
+           onmouseout="this.style.transform='scale(1)'"
+           onclick="openImgLightbox('${imgSrc}','${title}')"
+           onerror="this.outerHTML='<div style=&quot;width:38px;height:38px;border-radius:5px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:16px&quot;>📦</div>'">`
+      : `<div style="width:38px;height:38px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>`;
+    const stCls = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
+    const stTxt = r.totalStock===0?'Out':r.balanceQty<5?'Low':'OK';
+    const disc  = r.discountedPrice>0?`<br><span style="font-size:10px;color:var(--g)">${r.discountedPrice.toLocaleString()}</span>`:'';
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b)">${imgHtml}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(1)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px">PKR ${r.price.toLocaleString()}${disc}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 function openImgLightbox(url, title){

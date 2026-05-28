@@ -1029,13 +1029,14 @@ function buildDateChunks(fromDateStr, toDateStr){
   let cur = new Date(start);
 
   while(cur <= end){
-    const chunkEnd = new Date(cur.getFullYear(), 11, 31); // Dec 31 of current year
+    // Use 6-month chunks to stay well under the 25s worker timeout
+    const chunkEnd = new Date(cur.getFullYear(), cur.getMonth() + 6, 0); // 6 months ahead, last day
     const effectiveEnd = chunkEnd < end ? chunkEnd : end;
     chunks.push({
       from: fmtGtech(cur) + ' 00:00:00',
       to  : fmtGtech(effectiveEnd) + ' 23:59:59',
     });
-    cur = new Date(effectiveEnd.getFullYear() + 1, 0, 1); // Jan 1 next year
+    cur = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth() + 1, 1); // 1st of next month
   }
   return chunks;
 }

@@ -408,9 +408,7 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-    // Queue inventory load for first outlet
-    const firstOutlet = _user.role === 'asm' ? OUTLETS[0].id : _user.oid;
-    setTimeout(()=>{ queueInventory(firstOutlet); }, 2000);
+    // Inventory loads when user clicks Load Inventory button
   },0);
 }
 
@@ -482,7 +480,7 @@ function switchTab(el){
   if(el.dataset.pid==='panel-cfg') setTimeout(populateSettingsFields,0);
   // Auto-load inventory when switching to an outlet tab
   const oid = el.dataset.oid;
-  if(oid) queueInventory(oid);
+  // Don't auto-load — user clicks Load Inventory button manually
 }
 
 // ══ PANELS ══
@@ -767,9 +765,10 @@ function buildOutletHTML(o){
       <span id="invStatus_${o.id}" style="font-size:11px;font-family:var(--mono);color:var(--m)"></span>
     </div>
     <!-- Search bar -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-dark" onclick="queueInventory('${o.id}')" id="invBtn_${o.id}">▶ Load Inventory</button>
       <input type="text" id="invSearch_${o.id}"
-        style="flex:1;background:var(--s);border:1px solid var(--b);color:#111;padding:10px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;outline:none"
+        style="flex:1;background:var(--s);border:1px solid var(--b);color:#111;padding:10px 14px;border-radius:7px;font-family:var(--mono);font-size:13px;outline:none;min-width:200px"
         placeholder="🔍 Search by barcode or product name..."
         oninput="searchInv(this.value,'${o.id}')">
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--m);cursor:pointer;white-space:nowrap">
@@ -779,11 +778,11 @@ function buildOutletHTML(o){
     <!-- Summary pills -->
     <div id="invSummary_${o.id}" style="display:none;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
     <!-- Banner -->
-    <div id="invBanner_${o.id}" class="al-blue"><span>⏳</span><span>Loading inventory from G-Tech...</span></div>
+    <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Click <strong>Load Inventory</strong> to fetch current stock.</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
         <thead><tr><th style="width:52px"></th><th>Barcode</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
-        <tbody id="invBody_${o.id}"><tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Search a barcode or product name above</td></tr></tbody>
+        <tbody id="invBody_${o.id}"><tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Click Load Inventory then search a barcode or product name</td></tr></tbody>
       </table>
     </div>
   </div>`;
@@ -995,7 +994,6 @@ const _invQueue = [];
 let _invRunning = false;
 
 function queueInventory(oid){
-  if(_invData[oid] !== undefined) return; // already loaded
   if(_invQueue.includes(oid)) return; // already queued
   _invQueue.push(oid);
   runInvQueue();
@@ -1034,9 +1032,9 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  // 90 days back — captures all current stock movements without pulling years of history
+  // 30 days back — fast enough to avoid timeout while still accurate
   const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - 90);
+  fromDate.setDate(fromDate.getDate() - 30);
   const fmm  = String(fromDate.getMonth()+1).padStart(2,'0');
   const fdd  = String(fromDate.getDate()).padStart(2,'0');
   const fyyyy = fromDate.getFullYear();

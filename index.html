@@ -561,43 +561,37 @@ async function loadShopifySkuMap(){
     });
   }
 
-  try{
-    let nextEp      = '/products.json?limit=250&fields=title,images,variants';
-    let totalLoaded = 0;
-    let pageCount   = 0;
-    const maxPages  = 20;
+  async function fetchEp(ep){
+    const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com')
+              + '&token=' + encodeURIComponent(token)
+              + '&ep='    + encodeURIComponent(ep);
+    const r = await fetch(url);
+    const d = await r.json();
+    return d.products || [];
+  }
 
-    while(nextEp && pageCount < maxPages){
-      const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com')
-                + '&token=' + encodeURIComponent(token)
-                + '&ep='    + encodeURIComponent(nextEp);
-      const r        = await fetch(url);
-      const d        = await r.json();
-      const products = d.products || [];
+  try{
+    let totalLoaded = 0;
+    let sinceId     = null;
+
+    while(true){
+      const ep       = '/products.json?limit=250&fields=id,title,images,variants' + (sinceId ? '&since_id='+sinceId : '');
+      const products = await fetchEp(ep);
+
+      if(!products.length) break;
 
       processProducts(products);
       totalLoaded += products.length;
-      pageCount++;
+      sinceId = products[products.length - 1].id; // last product id for next page
       console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
 
-      // Use Link header from worker for next page cursor
-      const linkHeader = r.headers.get('x-shopify-link') || '';
-      const match      = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
-      if(match && products.length === 250){
-        try{
-          const nextUrl = new URL(match[1]);
-          nextEp = nextUrl.pathname + nextUrl.search;
-        } catch(e){ nextEp = null; }
-      } else {
-        nextEp = null; // no more pages
-      }
+      if(products.length < 250) break; // last page
     }
 
     _shopifyLoaded  = true;
     _shopifyLoading = false;
     console.log(`✅ Shopify fully loaded: ${totalLoaded} products, ${Object.keys(_skuImageMap).length} SKUs mapped`);
 
-    // Re-render any open inventory tables with images now available
     Object.keys(_invData).forEach(oid => {
       if(_invData[oid]?.length) renderInvPage(oid, 0);
     });

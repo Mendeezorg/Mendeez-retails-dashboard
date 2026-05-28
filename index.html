@@ -975,12 +975,6 @@ function updateOutletTarget(oid, toDateStr){
   if(progEl){ progEl.style.width=Math.min(pct,100)+'%'; progEl.style.background=pc; }
   if(stEl){ stEl.textContent=pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'; }
 }
-function applyRange(oid){
-  const f=document.getElementById('df_'+oid)?.value;
-  const t=document.getElementById('dt_'+oid)?.value;
-  if(!f||!t){alert('Select both dates');return;}
-  console.log('Fetch G-Tex:',oid,f,t);
-}
 function refreshOutlet(oid){ fetchGtechInventory(oid); }
 
 // ══ G-TECH LIVE INVENTORY ══
@@ -1179,27 +1173,6 @@ function openImgLightbox(url, title){
 }
 
 
-  const data = _invData[oid];
-  if(!data){ // fallback DOM search if no cached data yet
-    const lq=q.toLowerCase();
-    document.querySelectorAll(`#invBody_${oid} tr`).forEach(r=>{
-      r.style.display=lq&&!r.textContent.toLowerCase().includes(lq)?'none':'';
-    });
-    return;
-  }
-  const lq = q.toLowerCase().trim();
-  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
-  const bodyEl = document.getElementById('invBody_'+oid);
-  if(!bodyEl) return;
-  const filtered = data
-    .filter(r => !lq || r.barcode.toLowerCase().includes(lq) || getProductTitle(r.barcode).toLowerCase().includes(lq))
-    .filter(r => showZero || r.totalStock > 0);
-  // Temporarily override _invData for renderInvPage
-  const orig = _invData[oid];
-  _invData[oid] = filtered;
-  renderInvPage(oid, 0, showZero);
-  _invData[oid] = orig;
-}
 function saveTargets(){
   const m=document.getElementById('tgtMonth')?.value||new Date().toISOString().slice(0,7);
   OUTLETS.forEach(o=>{const v=document.getElementById('ti_'+o.id)?.value;if(v)TARGETS[o.id+'_'+m]=parseInt(v)||0;});

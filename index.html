@@ -534,52 +534,67 @@ async function loadShopifySkuMap(){
   const token = _shopifyToken || '';
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
-  let cursor = null;
-  let hasMore = true;
+  console.log('🛍 Loading Shopify product images...');
+
+  // Show a subtle loading indicator in all outlet tabs
+  document.querySelectorAll('[id^="invStatus_"]').forEach(el => {
+    if(!el.textContent) el.textContent = '🛍 Loading images...';
+  });
+
+  let lastId   = null;
+  let hasMore  = true;
   let totalLoaded = 0;
+  const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
 
   while(hasMore){
     try{
-      const ep = '/products.json?limit=250&fields=title,images,variants'+(cursor?'&since_id='+cursor:'');
-      const url = SHOPIFY_WORKER+'?store='+encodeURIComponent('mendeez.myshopify.com')+'&token='+encodeURIComponent(token)+'&ep='+encodeURIComponent(ep);
+      const ep  = '/products.json?limit=250&fields=title,images,variants' + (lastId ? '&since_id='+lastId : '');
+      const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com') + '&token=' + encodeURIComponent(token) + '&ep=' + encodeURIComponent(ep);
       const r   = await fetch(url);
       const d   = await r.json();
-      const products = d.products||[];
+      const products = d.products || [];
 
-      products.forEach(p=>{
+      products.forEach(p => {
         const imgUrl = p.images?.[0]?.src || '';
-        (p.variants||[]).forEach(v=>{
-          const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
-          // Map by SKU
+        (p.variants || []).forEach(v => {
           if(v.sku){
             const sku = String(v.sku).trim();
-            _skuImageMap[sku] = imgUrl;
-            _skuImageMap[stripped(sku)] = imgUrl;
-            _skuTitleMap[sku] = p.title;
-            _skuTitleMap[stripped(sku)] = p.title;
+            const skuS = stripped(sku);
+            _skuImageMap[sku]  = imgUrl; _skuImageMap[skuS]  = imgUrl;
+            _skuTitleMap[sku]  = p.title; _skuTitleMap[skuS]  = p.title;
           }
-          // Map by barcode
           if(v.barcode){
-            const bc = String(v.barcode).trim();
-            _barcodeImageMap[bc] = imgUrl;
-            _barcodeImageMap[stripped(bc)] = imgUrl;
-            _barcodeTitleMap[bc] = p.title;
-            _barcodeTitleMap[stripped(bc)] = p.title;
+            const bc  = String(v.barcode).trim();
+            const bcS = stripped(bc);
+            _barcodeImageMap[bc]  = imgUrl; _barcodeImageMap[bcS]  = imgUrl;
+            _barcodeTitleMap[bc]  = p.title; _barcodeTitleMap[bcS]  = p.title;
           }
         });
+        if(p.id) lastId = p.id;
       });
 
       totalLoaded += products.length;
       hasMore = products.length === 250;
-      if(hasMore) cursor = products[products.length-1].id;
-    }catch(e){
+      console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
+
+    } catch(e){
       console.log('Shopify load error:', e.message);
       hasMore = false;
     }
   }
 
   _shopifyLoaded = true;
-  console.log(`Shopify loaded: ${Object.keys(_skuImageMap).length} SKUs, ${Object.keys(_barcodeImageMap).length} barcodes from ${totalLoaded} products`);
+  console.log(`✅ Shopify fully loaded: ${totalLoaded} products, ${Object.keys(_skuImageMap).length} SKUs mapped`);
+
+  // Clear loading indicators
+  document.querySelectorAll('[id^="invStatus_"]').forEach(el => {
+    if(el.textContent === '🛍 Loading images...') el.textContent = '';
+  });
+
+  // Re-render any already-loaded inventory tables to show images
+  Object.keys(_invData).forEach(oid => {
+    if(_invData[oid]?.length) renderInvPage(oid, 0);
+  });
 }
 
 // Lookup by barcode first (G-Tech), fallback to SKU, try with/without leading zeros

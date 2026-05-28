@@ -1014,14 +1014,7 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  // Use last 30 days — enough to get current stock without too much history
-  const fromDate = new Date();
-  fromDate.setDate(fromDate.getDate() - 30);
-  const fmm = String(fromDate.getMonth()+1).padStart(2,'0');
-  const fdd = String(fromDate.getDate()).padStart(2,'0');
-  const fyyyy = fromDate.getFullYear();
-
-  const dateFrom = `${fmm}/${fdd}/${fyyyy} 00:00:00`;
+  const dateFrom = '01/01/2020 00:00:00';
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 

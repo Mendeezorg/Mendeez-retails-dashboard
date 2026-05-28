@@ -1007,7 +1007,7 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  const dateFrom = '05/01/2026 00:00:00';
+  const dateFrom = `${todayFmt} 00:00:00`;
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 
@@ -1034,7 +1034,7 @@ async function fetchGtechInventory(oid){
     if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
 
     // Normalise
-    const data = rows.map(r=>({
+    const rawData = rows.map(r=>({
       barcode        : String(r.barcode       ?? r.Barcode       ?? ''),
       location       : String(r.location      ?? r.Location      ?? ''),
       balanceQty     : parseFloat(r.balanceQty    ?? r.BalanceQty    ?? 0),
@@ -1044,6 +1044,19 @@ async function fetchGtechInventory(oid){
       discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
       lastUpdated    : String(r.lastUpdated   ?? r.LastUpdated   ?? ''),
     }));
+
+    // Deduplicate — keep only the LATEST record per barcode
+    const latestMap = {};
+    rawData.forEach(r => {
+      if(!latestMap[r.barcode]){
+        latestMap[r.barcode] = r;
+      } else {
+        const existing = new Date(latestMap[r.barcode].lastUpdated);
+        const current  = new Date(r.lastUpdated);
+        if(current > existing) latestMap[r.barcode] = r;
+      }
+    });
+    const data = Object.values(latestMap);
 
     _invData[oid] = data;
 

@@ -1019,24 +1019,29 @@ let _invData = {}; // oid → full normalised array
 // Split [dateFrom, dateTo] into yearly sub-ranges to avoid 524 timeouts on large outlets.
 // Each chunk covers at most one calendar year so the upstream response stays under ~25s.
 function buildDateChunks(fromDateStr, toDateStr){
-  // fromDateStr / toDateStr: 'MM/DD/YYYY' (G-Tech format)
   function parseGtech(s){ const [m,d,y]=s.split('/'); return new Date(+y,+m-1,+d); }
   function fmtGtech(dt){ return `${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}/${dt.getFullYear()}`; }
 
-  const start = parseGtech(fromDateStr);
-  const end   = parseGtech(toDateStr);
-  const chunks = [];
+  const start    = parseGtech(fromDateStr);
+  const end      = parseGtech(toDateStr);
+  const cutoff6  = new Date(end.getFullYear() - 1, end.getMonth(), 1); // older than 12 months → 6mo chunks
+  const cutoff1  = new Date(end.getFullYear(),  end.getMonth() - 5, 1); // last 6 months → 1mo chunks
+  const chunks   = [];
   let cur = new Date(start);
 
   while(cur <= end){
-    // Use 6-month chunks to stay well under the 25s worker timeout
-    const chunkEnd = new Date(cur.getFullYear(), cur.getMonth() + 6, 0); // 6 months ahead, last day
+    let monthStep;
+    if(cur >= cutoff1)      monthStep = 1;  // last 6 months: 1-month chunks
+    else if(cur >= cutoff6) monthStep = 3;  // 6–12 months ago: 3-month chunks
+    else                    monthStep = 6;  // older: 6-month chunks
+
+    const chunkEnd     = new Date(cur.getFullYear(), cur.getMonth() + monthStep, 0);
     const effectiveEnd = chunkEnd < end ? chunkEnd : end;
     chunks.push({
       from: fmtGtech(cur) + ' 00:00:00',
       to  : fmtGtech(effectiveEnd) + ' 23:59:59',
     });
-    cur = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth() + 1, 1); // 1st of next month
+    cur = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth() + 1, 1);
   }
   return chunks;
 }

@@ -408,9 +408,9 @@ function doLogin(){
     if(rf)rf.value=today;
     if(rt)rt.value=today;
     renderReport();
-    // Auto-load inventory for current outlet only when tab is clicked
-    // First outlet loads automatically after Shopify is ready
-    setTimeout(()=>{ fetchGtechInventory(OUTLETS[0].id); }, 2000);
+    // Queue inventory load for first outlet
+    const firstOutlet = _user.role === 'asm' ? OUTLETS[0].id : _user.oid;
+    setTimeout(()=>{ queueInventory(firstOutlet); }, 2000);
   },0);
 }
 
@@ -482,9 +482,7 @@ function switchTab(el){
   if(el.dataset.pid==='panel-cfg') setTimeout(populateSettingsFields,0);
   // Auto-load inventory when switching to an outlet tab
   const oid = el.dataset.oid;
-  if(oid && !_invData[oid]){
-    setTimeout(()=> fetchGtechInventory(oid), 100);
-  }
+  if(oid) queueInventory(oid);
 }
 
 // ══ PANELS ══
@@ -992,7 +990,29 @@ function updateOutletTarget(oid, toDateStr){
   if(progEl){ progEl.style.width=Math.min(pct,100)+'%'; progEl.style.background=pc; }
   if(stEl){ stEl.textContent=pct>=100?'🎉 Target achieved!':pct>=70?'On track':'Needs attention'; }
 }
-function refreshOutlet(oid){ fetchGtechInventory(oid); }
+// ══ INVENTORY QUEUE — loads one outlet at a time ══
+const _invQueue = [];
+let _invRunning = false;
+
+function queueInventory(oid){
+  if(_invData[oid] !== undefined) return; // already loaded
+  if(_invQueue.includes(oid)) return; // already queued
+  _invQueue.push(oid);
+  runInvQueue();
+}
+
+async function runInvQueue(){
+  if(_invRunning || _invQueue.length === 0) return;
+  _invRunning = true;
+  while(_invQueue.length > 0){
+    const oid = _invQueue.shift();
+    if(_invData[oid] === undefined){
+      await fetchGtechInventory(oid);
+      await new Promise(r => setTimeout(r, 500)); // 500ms gap between requests
+    }
+  }
+  _invRunning = false;
+}
 
 // ══ G-TECH LIVE INVENTORY ══
 const INV_PAGE_SIZE = 100; // rows rendered at a time
@@ -1024,8 +1044,7 @@ async function fetchGtechInventory(oid){
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 
-  // Call G-Tech directly from browser — bypasses Cloudflare 30s timeout
-  const url = `${GTECH_BASE}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
+  const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
 
   // UI: loading
   if(statusEl) statusEl.textContent = '⏳ Fetching…';

@@ -1014,12 +1014,18 @@ async function fetchGtechInventory(oid){
   const yyyy   = today.getFullYear();
   const todayFmt = `${mm}/${dd}/${yyyy}`;
 
-  const dateFrom = '01/01/2020 00:00:00';
+  // 90 days back — captures all current stock movements without pulling years of history
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - 90);
+  const fmm  = String(fromDate.getMonth()+1).padStart(2,'0');
+  const fdd  = String(fromDate.getDate()).padStart(2,'0');
+  const fyyyy = fromDate.getFullYear();
+  const dateFrom = `${fmm}/${fdd}/${fyyyy} 00:00:00`;
   const dateTo   = `${todayFmt} 23:59:59`;
   const barcode  = bcEl?.value.trim() || '';
 
-  // Build URL manually — do NOT use URLSearchParams (it encodes spaces as + breaking the API)
-  const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
+  // Call G-Tech directly from browser — bypasses Cloudflare 30s timeout
+  const url = `${GTECH_BASE}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}&Barcode=${encodeURIComponent(barcode)}`;
 
   // UI: loading
   if(statusEl) statusEl.textContent = '⏳ Fetching…';

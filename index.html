@@ -537,7 +537,7 @@ async function loadShopifySkuMap(){
   if(!token){ console.log('No Shopify token — images will show placeholder'); return; }
 
   _shopifyLoading = true;
-  console.log('🛍 Loading Shopify product images in parallel...');
+  console.log('🛍 Loading Shopify product images...');
 
   const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
 
@@ -561,39 +561,43 @@ async function loadShopifySkuMap(){
     });
   }
 
-  async function fetchPage(page){
-    const ep  = `/products.json?limit=250&page=${page}&fields=title,images,variants`;
-    const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com') + '&token=' + encodeURIComponent(token) + '&ep=' + encodeURIComponent(ep);
-    const r   = await fetch(url);
-    const d   = await r.json();
-    return d.products || [];
-  }
-
   try{
-    // Fetch page 1 first to know total count
-    const first = await fetchPage(1);
-    processProducts(first);
+    let nextEp      = '/products.json?limit=250&fields=title,images,variants';
+    let totalLoaded = 0;
+    let pageCount   = 0;
+    const maxPages  = 20;
 
-    if(first.length === 250){
-      // Calculate remaining pages (3252 products / 250 = 14 pages)
-      const totalPages = 14; // safe upper bound for mendeez
-      const pageNums   = Array.from({length: totalPages - 1}, (_, i) => i + 2);
+    while(nextEp && pageCount < maxPages){
+      const url = SHOPIFY_WORKER + '?store=' + encodeURIComponent('mendeez.myshopify.com')
+                + '&token=' + encodeURIComponent(token)
+                + '&ep='    + encodeURIComponent(nextEp);
+      const r        = await fetch(url);
+      const d        = await r.json();
+      const products = d.products || [];
 
-      // Fetch all remaining pages in parallel (batches of 5 to avoid rate limits)
-      for(let i = 0; i < pageNums.length; i += 5){
-        const batch   = pageNums.slice(i, i + 5);
-        const results = await Promise.all(batch.map(p => fetchPage(p)));
-        results.forEach(products => processProducts(products));
-        console.log(`🛍 Shopify: batch ${Math.floor(i/5)+1} done, ${Object.keys(_skuImageMap).length} SKUs mapped...`);
+      processProducts(products);
+      totalLoaded += products.length;
+      pageCount++;
+      console.log(`🛍 Shopify: ${totalLoaded} products loaded...`);
+
+      // Use Link header from worker for next page cursor
+      const linkHeader = r.headers.get('x-shopify-link') || '';
+      const match      = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      if(match && products.length === 250){
+        try{
+          const nextUrl = new URL(match[1]);
+          nextEp = nextUrl.pathname + nextUrl.search;
+        } catch(e){ nextEp = null; }
+      } else {
+        nextEp = null; // no more pages
       }
     }
 
     _shopifyLoaded  = true;
     _shopifyLoading = false;
-    const total = Object.keys(_skuImageMap).length;
-    console.log(`✅ Shopify fully loaded: ${total} SKUs mapped`);
+    console.log(`✅ Shopify fully loaded: ${totalLoaded} products, ${Object.keys(_skuImageMap).length} SKUs mapped`);
 
-    // Re-render open inventory tables with images
+    // Re-render any open inventory tables with images now available
     Object.keys(_invData).forEach(oid => {
       if(_invData[oid]?.length) renderInvPage(oid, 0);
     });

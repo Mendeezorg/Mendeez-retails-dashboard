@@ -526,6 +526,7 @@ let _skuTitleMap   = {};   // sku → product title
 let _shopifyLoaded = false;
 const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
 const GTECH_PROXY    = 'https://mendeez-shopify.divine-mouse-0258.workers.dev/gtech';
+const GTECH_BALANCE  = 'https://mendeez-shopify.divine-mouse-0258.workers.dev/gtech-balance';
 const SHOPIFY_STORE  = 'mendeez.myshopify.com';
 let _shopifyToken = '';
 let _shopifyStore = 'mendeez.myshopify.com'; // fixed store name
@@ -781,7 +782,7 @@ function buildOutletHTML(o){
     <div id="invBanner_${o.id}" class="al-blue"><span>ℹ</span><span>Click <strong>Load Inventory</strong> to fetch current stock.</span></div>
     <div style="overflow-x:auto">
       <table class="inv-table">
-        <thead><tr><th style="width:52px"></th><th>Barcode</th><th>Product Name</th><th>Balance Qty</th><th>Total Stock</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
+        <thead><tr><th style="width:52px">Picture</th><th>Barcode</th><th>Product Name</th><th>Balance Qty</th><th>Hold Qty</th><th>Price</th><th>Status</th></tr></thead>
         <tbody id="invBody_${o.id}"><tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Click Load Inventory then search a barcode or product name</td></tr></tbody>
       </table>
     </div>
@@ -1027,127 +1028,68 @@ async function fetchGtechInventory(oid){
   const bodyEl   = document.getElementById('invBody_'+oid);
   const summEl   = document.getElementById('invSummary_'+oid);
 
-  const setBanner = (html, cls='al-blue') => {
+  const setBanner = (msg, cls='al-blue') => {
     if(!bannerEl) return;
     bannerEl.style.cssText = cls === 'al-blue'
       ? 'background:var(--bld);border:1px solid #bfdbfe;color:var(--bl);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px'
       : 'background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px';
-    bannerEl.innerHTML = html;
+    bannerEl.innerHTML = msg;
+    bannerEl.style.display = 'flex';
   };
 
-  // Build 2-week chunks: Jan 2026 → today
-  // 2 weeks per chunk ~2-5s each, well under 29s worker timeout
-  const today = new Date();
-  const chunks = [];
-  const addDays2 = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
-  const fmtDate  = d => String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'/'+d.getFullYear();
-  let cur = new Date(2025, 0, 1);  // Start from Jan 2025 to capture full running balance
-  while(cur <= today){
-    const effEnd = addDays2(cur, 13) < today ? addDays2(cur, 13) : today;
-    chunks.push({
-      from  : fmtDate(cur)+' 00:00:00',
-      to    : fmtDate(effEnd)+' 23:59:59',
-      label : fmtDate(cur)+' → '+fmtDate(effEnd)
-    });
-    cur = addDays2(effEnd, 1);
-  }
-  const totalChunks = chunks.length;
-
   if(statusEl) statusEl.textContent = '⏳ Fetching…';
-  setBanner(`<span>⏳</span><span>Loading stock (1/${totalChunks} months)…</span>`);
-  if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
-  if(summEl) summEl.style.display='none';
+  setBanner('<span>⏳</span><span>Loading real-time stock data…</span>');
+  if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
+  if(summEl) summEl.style.display = 'none';
 
-  const t0 = Date.now();
-  const allRows = [];
-  let failedChunks = 0;
-
-  for(let i = 0; i < chunks.length; i++){
-    const chunk = chunks[i];
-    if(statusEl) statusEl.textContent = `⏳ ${chunk.label} (${i+1}/${totalChunks})…`;
-    setBanner(`<span>⏳</span><span>Loading ${chunk.label}… (${i+1}/${totalChunks})</span>`);
-
-    const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(chunk.from)}&DateTo=${encodeURIComponent(chunk.to)}&Location=${encodeURIComponent(locCode)}`;
-
-    let attempt = 0, success = false;
-    while(attempt < 2 && !success){
-      try{
-        const res = await fetch(url);
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const text = await res.text();
-        let rows; try{ rows=JSON.parse(text); }catch(e){ throw new Error('Invalid JSON'); }
-        if(rows && rows.error==='TIMEOUT') throw new Error('TIMEOUT');
-        if(!Array.isArray(rows)) rows = rows.data||rows.result||rows.records||[];
-        allRows.push(...rows);
-        success = true;
-      } catch(err){
-        attempt++;
-        if(attempt >= 2){
-          console.warn(`G-Tech ${chunk.label} failed: ${err.message}`);
-          failedChunks++;
-        } else {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      }
-    }
-  }
-
-  if(allRows.length === 0 && failedChunks === totalChunks){
-    if(statusEl) statusEl.textContent = '⚠ Error';
-    setBanner('<span>⚠</span><span>All months failed — G-Tech unreachable. Try again.</span>', 'err');
-    if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: G-Tech API unreachable</td></tr>`;
-    return;
-  }
-
-  if(statusEl) statusEl.textContent = '⚙ Processing…';
-  if(failedChunks > 0){
-    setBanner(`<span>⚠</span><span>${failedChunks} month(s) failed — showing partial data.</span>`, 'err');
-    setTimeout(()=>{ if(bannerEl) bannerEl.style.display='none'; }, 6000);
-  }
+  const t0  = Date.now();
+  // Real-time: no KV cache — direct G-Tech call every time
+  const url = `${GTECH_BALANCE}?api=${GTECH_API_KEY}&Location=${encodeURIComponent(locCode)}`;
 
   try{
-    // Normalise
-    const rawData = allRows.map(r=>({
-      barcode        : String(r.barcode        ?? r.Barcode        ?? ''),
-      location       : String(r.location       ?? r.Location       ?? ''),
-      balanceQty     : parseFloat(r.balanceQty     ?? r.BalanceQty     ?? 0),
-      holdQty        : parseFloat(r.holdQty         ?? r.HoldQty         ?? 0),
-      totalStock     : parseFloat(r.totalStock      ?? r.TotalStock      ?? 0),
-      price          : parseFloat(r.price           ?? r.Price           ?? 0),
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    let rows; try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
+    if(rows && rows.error === 'TIMEOUT') throw new Error('G-Tech timeout — try again');
+    if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
+
+    if(statusEl) statusEl.textContent = '⚙ Processing…';
+
+    // Normalise — StockBalance returns barcode, location, balanceQty
+    // holdQty and price come from Shopify match (price already in _skuMap)
+    const data = rows.map(r => ({
+      barcode        : String(r.barcode    ?? r.Barcode    ?? ''),
+      location       : String(r.location   ?? r.Location   ?? ''),
+      balanceQty     : parseFloat(r.balanceQty  ?? r.BalanceQty  ?? 0),
+      holdQty        : parseFloat(r.holdQty     ?? r.HoldQty     ?? 0),
+      price          : parseFloat(r.price       ?? r.Price       ?? 0),
       discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
-      lastUpdated    : String(r.lastUpdated    ?? r.LastUpdated    ?? ''),
     }));
 
-    // Deduplicate — keep only the LATEST record per barcode
-    const latestMap = {};
-    rawData.forEach(r => {
-      if(!latestMap[r.barcode]){
-        latestMap[r.barcode] = r;
-      } else {
-        const existing = new Date(latestMap[r.barcode].lastUpdated);
-        const current  = new Date(r.lastUpdated);
-        if(current > existing) latestMap[r.barcode] = r;
-      }
+    // Sort: in-stock first, then zero stock, both alphabetical by barcode
+    data.sort((a,b) => {
+      if(a.balanceQty > 0 && b.balanceQty <= 0) return -1;
+      if(a.balanceQty <= 0 && b.balanceQty > 0) return 1;
+      return a.barcode.localeCompare(b.barcode);
     });
-    const data = Object.values(latestMap);
+
     _invData[oid] = data;
 
     // Stats
-    const inStock   = data.filter(r=>r.totalStock>0).length;
-    const zeroStock = data.filter(r=>r.totalStock===0).length;
-    const totalBal  = data.reduce((s,r)=>s+r.balanceQty, 0);
-    const totalStk  = data.reduce((s,r)=>s+r.totalStock, 0);
-    const ms        = Date.now()-t0;
+    const inStock   = data.filter(r => r.balanceQty > 0).length;
+    const zeroStock = data.filter(r => r.balanceQty <= 0).length;
+    const totalBal  = data.reduce((s,r) => s + r.balanceQty, 0);
+    const ms        = Date.now() - t0;
 
     if(summEl){
-      summEl.style.display='flex';
-      summEl.innerHTML=[
-        {l:'Total SKUs',  v:data.length,                                    c:'var(--bl)'},
-        {l:'In Stock',    v:inStock,                                         c:'var(--g)'},
-        {l:'Zero Stock',  v:zeroStock,                                       c:'var(--r)'},
-        {l:'Balance Qty', v:totalBal.toFixed(0),                            c:'#111'},
-        {l:'Total Stock', v:totalStk.toFixed(0),                            c:'var(--or)'},
-        {l:'Load Time',   v:ms<60000?ms+'ms':Math.round(ms/1000)+'s',      c:'var(--m)'},
+      summEl.style.display = 'flex';
+      summEl.innerHTML = [
+        {l:'Total SKUs',  v:data.length,          c:'var(--bl)'},
+        {l:'In Stock',    v:inStock,               c:'var(--g)'},
+        {l:'Zero Stock',  v:zeroStock,             c:'var(--r)'},
+        {l:'Balance Qty', v:totalBal.toFixed(0),   c:'#111'},
+        {l:'Load Time',   v:ms+'ms',               c:'var(--m)'},
       ].map(s=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:7px;padding:8px 14px;text-align:center;min-width:90px">
         <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${s.c}">${s.v}</div>
         <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);margin-top:2px">${s.l}</div>
@@ -1155,73 +1097,71 @@ async function fetchGtechInventory(oid){
     }
 
     if(statusEl) statusEl.textContent = `✓ ${data.length} SKUs · ${new Date().toLocaleTimeString()}`;
-    if(bannerEl) bannerEl.style.display='none';
+    if(bannerEl) bannerEl.style.display = 'none';
+    renderInvPage(oid, 0);
 
   } catch(err){
     if(statusEl) statusEl.textContent = '⚠ Error';
     setBanner(`<span>⚠</span><span>${err.message}</span>`, 'err');
-    if(bodyEl) bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: ${err.message}</td></tr>`;
+    if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: ${err.message}</td></tr>`;
   }
 }
 
 
 function renderInvPage(oid, page, showZero){
-  const data     = _invData[oid] || [];
-  const showZ    = showZero !== undefined ? showZero : (document.getElementById('invShowZero_'+oid)?.checked ?? true);
-  const filtered = showZ ? data : data.filter(r=>r.totalStock>0);
-  const start   = page * INV_PAGE_SIZE;
-  const slice   = filtered.slice(start, start + INV_PAGE_SIZE);
-  const bodyEl  = document.getElementById('invBody_'+oid);
+  const data   = _invData[oid] || [];
+  const bodyEl = document.getElementById('invBody_'+oid);
   if(!bodyEl) return;
 
-  if(filtered.length===0){
-    bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">
-      No records. ${!showZ?'Try enabling "Show zero stock".':''}</td></tr>`;
+  const showZ  = showZero !== undefined ? showZero : true; // always show all
+  const filter = data; // show everything — zero and non-zero
+  const total  = filter.length;
+  const pages  = Math.ceil(total / INV_PAGE_SIZE) || 1;
+  const pg     = Math.max(0, Math.min(page, pages-1));
+  const slice  = filter.slice(pg * INV_PAGE_SIZE, (pg+1) * INV_PAGE_SIZE);
+
+  if(slice.length === 0){
+    bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No inventory data</td></tr>`;
     return;
   }
 
-  const rows = slice.map(r=>{
+  const rows = slice.map(r => {
     const imgUrl  = getProductImage(r.barcode);
-    const title   = (getProductTitle(r.barcode)||'').replace(/'/g,"\\'");
-    const imgSrc  = imgUrl.replace(/'/g,"\\'");
+    const title   = getProductTitle(r.barcode) || '—';
     const imgHtml = imgUrl
-      ? `<img src="${imgUrl}" 
-           style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b);cursor:zoom-in;transition:transform .15s" 
-           loading="lazy"
-           onmouseover="this.style.transform='scale(1.2)'"
-           onmouseout="this.style.transform='scale(1)'"
-           onclick="openImgLightbox('${imgSrc}','${title}')"
-           onerror="this.outerHTML='<div style=&quot;width:38px;height:38px;border-radius:5px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:16px&quot;>📦</div>'">`
-      : `<div style="width:38px;height:38px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>`;
-    const stCls = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
-    const stTxt = r.totalStock===0?'Out':r.balanceQty<5?'Low':'OK';
-    const disc  = r.discountedPrice>0?`<br><span style="font-size:10px;color:var(--g)">${r.discountedPrice.toLocaleString()}</span>`:'';
-    return `<tr>
+      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--b);cursor:zoom-in" loading="lazy"
+           onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"
+           onclick="openImgLightbox('${imgUrl.replace(/'/g,"\'")}','${title.replace(/'/g,"\'")}')"`
+      + ` onerror="this.outerHTML='<div style=&quot;width:44px;height:44px;border-radius:6px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:18px&quot;>📦</div>'">`
+      : `<div style="width:44px;height:44px;border-radius:6px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+
+    const isInStock = r.balanceQty > 0;
+    const statusCls = isInStock ? 'stk-ok' : 'stk-out';
+    const statusTxt = isInStock ? 'In Stock' : 'Out';
+    const balColor  = isInStock ? 'var(--g)' : 'var(--r)';
+    const price     = r.price > 0 ? `PKR ${r.price.toLocaleString()}` : '—';
+
+    return `<tr style="background:${isInStock?'':'#fff8f8'}">
       <td style="padding:6px 10px;border-bottom:1px solid var(--b)">${imgHtml}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px">PKR ${r.price.toLocaleString()}${disc}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;font-size:14px;color:${balColor};text-align:center">${r.balanceQty.toFixed(0)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:13px;color:${r.holdQty>0?'var(--or)':'var(--m2)'};text-align:center">${r.holdQty.toFixed(0)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${price}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);text-align:center"><span class="${statusCls}" style="font-size:11px;padding:2px 8px;border-radius:20px">${statusTxt}</span></td>
     </tr>`;
   }).join('');
 
-  // Pagination footer
-  const totalPages = Math.ceil(filtered.length / INV_PAGE_SIZE);
-  const pageBar = totalPages > 1 ? `
-    <tr><td colspan="8" style="padding:10px 12px;background:var(--s);border-top:1px solid var(--b)">
-      <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px">
-        <span style="color:var(--m)">Page ${page+1} of ${totalPages} · showing ${start+1}–${Math.min(start+INV_PAGE_SIZE,filtered.length)} of ${filtered.length}</span>
-        <span style="flex:1"></span>
-        ${page>0?`<button class="btn btn-out btn-sm" onclick="renderInvPage('${oid}',${page-1})">← Prev</button>`:''}
-        ${page<totalPages-1?`<button class="btn btn-dark btn-sm" onclick="renderInvPage('${oid}',${page+1})">Next →</button>`:''}
-      </div>
-    </td></tr>` : '';
+  const pageBar = pages > 1 ? `<tr><td colspan="7" style="padding:10px;text-align:center;border-top:1px solid var(--b)">
+    ${pg>0?`<button class="btn btn-out btn-sm" onclick="renderInvPage('${oid}',${pg-1})">← Prev</button>`:''}
+    <span style="font-size:11px;color:var(--m);font-family:var(--mono);margin:0 12px">Page ${pg+1} / ${pages} · ${total} SKUs</span>
+    ${pg<pages-1?`<button class="btn btn-dark btn-sm" onclick="renderInvPage('${oid}',${pg+1})">Next →</button>`:''}
+  </td></tr>` : '';
 
   bodyEl.innerHTML = rows + pageBar;
 }
+
+
 function searchInv(q, oid){
   const data     = _invData[oid];
   const bodyEl   = document.getElementById('invBody_'+oid);

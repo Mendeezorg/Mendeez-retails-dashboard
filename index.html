@@ -523,6 +523,8 @@ function buildPanels(){
 // ══════════════════════════════════════════════════
 let _skuImageMap   = {};   // sku → image url
 let _skuTitleMap   = {};   // sku → product title
+let _skuPriceMap   = {};   // sku → price
+let _barcodePriceMap = {}; // barcode → price
 let _shopifyLoaded = false;
 const SHOPIFY_WORKER = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
 const GTECH_PROXY    = 'https://mendeez-shopify.divine-mouse-0258.workers.dev/gtech';
@@ -554,12 +556,14 @@ async function loadShopifySkuMap(){
           const skuS = stripped(sku);
           _skuImageMap[sku]  = imgUrl; _skuImageMap[skuS]  = imgUrl;
           _skuTitleMap[sku]  = p.title; _skuTitleMap[skuS]  = p.title;
+          _skuPriceMap[sku]  = parseFloat(v.price||0); _skuPriceMap[skuS]  = parseFloat(v.price||0);
         }
         if(v.barcode){
           const bc  = String(v.barcode).trim();
           const bcS = stripped(bc);
           _barcodeImageMap[bc]  = imgUrl; _barcodeImageMap[bcS]  = imgUrl;
           _barcodeTitleMap[bc]  = p.title; _barcodeTitleMap[bcS]  = p.title;
+          _barcodePriceMap[bc]  = parseFloat(v.price||0); _barcodePriceMap[bcS]  = parseFloat(v.price||0);
         }
       });
     });
@@ -573,7 +577,7 @@ async function loadShopifySkuMap(){
           title
           featuredImage { url }
           variants(first: 100) {
-            edges { node { sku barcode } }
+            edges { node { sku barcode price } }
           }
         }
       }
@@ -624,6 +628,14 @@ function getProductImage(barcodeOrSku){
            || _barcodeImageMap[ks] || _barcodeImageMap[k] || '';
   // Remove Shopify image size suffix to get full quality (e.g. _100x100 → removed)
   return url.replace(/_(pico|icon|thumb|small|compact|medium|large|grande|original|master|\d+x\d*)(\.[a-z]+)(\?|$)/, '$2$3');
+}
+
+function getProductPrice(barcodeOrSku){
+  if(!barcodeOrSku) return 0;
+  const k  = String(barcodeOrSku).trim();
+  const ks = k.replace(/^0+/,'');
+  return _skuPriceMap[ks]     || _skuPriceMap[k]
+      || _barcodePriceMap[ks] || _barcodePriceMap[k] || 0;
 }
 
 function getProductTitle(barcodeOrSku){
@@ -1042,32 +1054,62 @@ async function fetchGtechInventory(oid){
   if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
   if(summEl) summEl.style.display = 'none';
 
-  const t0  = Date.now();
-  // Real-time: no KV cache — direct G-Tech call every time
-  const url = `${GTECH_BALANCE}?api=${GTECH_API_KEY}&Location=${encodeURIComponent(locCode)}`;
+  const t0 = Date.now();
+
+  // Build today's date for StockBalanceOmni price fetch
+  const now    = new Date();
+  const mm     = String(now.getMonth()+1).padStart(2,'0');
+  const dd     = String(now.getDate()).padStart(2,'0');
+  const yyyy   = now.getFullYear();
+  const todayFrom = `${mm}/${dd}/${yyyy} 00:00:00`;
+  const todayTo   = `${mm}/${dd}/${yyyy} 23:59:59`;
+
+  // Run both calls in parallel
+  const balanceUrl = `${GTECH_BALANCE}?api=${GTECH_API_KEY}&Location=${encodeURIComponent(locCode)}`;
+  const priceUrl   = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(todayFrom)}&DateTo=${encodeURIComponent(todayTo)}&Location=${encodeURIComponent(locCode)}`;
 
   try{
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    let rows; try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
-    if(rows && rows.error === 'TIMEOUT') throw new Error('G-Tech timeout — try again');
-    if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
+    const [balRes, priceRes] = await Promise.all([
+      fetch(balanceUrl),
+      fetch(priceUrl).catch(() => null) // price is optional — don't fail if it errors
+    ]);
+
+    if(!balRes.ok) throw new Error('HTTP ' + balRes.status);
+    const balText = await balRes.text();
+    let balRows; try{ balRows = JSON.parse(balText); } catch(e){ throw new Error('Invalid JSON'); }
+    if(balRows && balRows.error === 'TIMEOUT') throw new Error('G-Tech timeout — try again');
+    if(!Array.isArray(balRows)) balRows = balRows.data || balRows.result || balRows.records || [];
+
+    // Build price map from StockBalanceOmni (barcode → price)
+    const priceMap = {};
+    if(priceRes && priceRes.ok){
+      try{
+        const priceText = await priceRes.text();
+        let priceRows = JSON.parse(priceText);
+        if(!Array.isArray(priceRows)) priceRows = priceRows.data || priceRows.result || priceRows.records || [];
+        priceRows.forEach(r => {
+          const bc = String(r.barcode ?? r.Barcode ?? '');
+          const pr = parseFloat(r.price ?? r.Price ?? 0);
+          if(bc && pr > 0) priceMap[bc] = pr;
+        });
+      } catch(e){ console.warn('Price fetch failed silently:', e.message); }
+    }
 
     if(statusEl) statusEl.textContent = '⚙ Processing…';
 
-    // Normalise — StockBalance returns barcode, location, balanceQty
-    // holdQty and price come from Shopify match (price already in _skuMap)
-    const data = rows.map(r => ({
-      barcode        : String(r.barcode    ?? r.Barcode    ?? ''),
-      location       : String(r.location   ?? r.Location   ?? ''),
-      balanceQty     : parseFloat(r.balanceQty  ?? r.BalanceQty  ?? 0),
-      holdQty        : parseFloat(r.holdQty     ?? r.HoldQty     ?? 0),
-      price          : parseFloat(r.price       ?? r.Price       ?? 0),
-      discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
-    }));
+    // Normalise — qty from StockBalance, price from StockBalanceOmni
+    const data = balRows.map(r => {
+      const bc = String(r.barcode ?? r.Barcode ?? '');
+      return {
+        barcode   : bc,
+        location  : String(r.location  ?? r.Location  ?? ''),
+        balanceQty: parseFloat(r.balanceQty ?? r.BalanceQty ?? 0),
+        holdQty   : parseFloat(r.holdQty    ?? r.HoldQty    ?? 0),
+        price     : priceMap[bc] || 0,
+      };
+    });
 
-    // Sort: in-stock first, then zero stock, both alphabetical by barcode
+    // Sort: in-stock first, then zero, both alphabetical
     data.sort((a,b) => {
       if(a.balanceQty > 0 && b.balanceQty <= 0) return -1;
       if(a.balanceQty <= 0 && b.balanceQty > 0) return 1;
@@ -1138,7 +1180,8 @@ function renderInvPage(oid, page, showZero){
     const statusCls = isInStock ? 'stk-ok' : 'stk-out';
     const statusTxt = isInStock ? 'In Stock' : 'Out';
     const balColor  = isInStock ? 'var(--g)' : 'var(--r)';
-    const price     = r.price > 0 ? `PKR ${r.price.toLocaleString()}` : '—';
+    const price     = getProductPrice(r.barcode);
+    const priceStr  = price > 0 ? `PKR ${price.toLocaleString()}` : '—';
 
     return `<tr style="background:${isInStock?'':'#fff8f8'}">
       <td style="padding:6px 10px;border-bottom:1px solid var(--b)">${imgHtml}</td>
@@ -1146,7 +1189,7 @@ function renderInvPage(oid, page, showZero){
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;font-size:14px;color:${balColor};text-align:center">${r.balanceQty.toFixed(0)}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:13px;color:${r.holdQty>0?'var(--or)':'var(--m2)'};text-align:center">${r.holdQty.toFixed(0)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${price}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${priceStr}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);text-align:center"><span class="${statusCls}" style="font-size:11px;padding:2px 8px;border-radius:20px">${statusTxt}</span></td>
     </tr>`;
   }).join('');
@@ -1209,7 +1252,8 @@ function searchInv(q, oid){
       : `<div style="width:44px;height:44px;border-radius:6px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
     const isInStock = r.balanceQty > 0;
     const balColor  = isInStock ? 'var(--g)' : 'var(--r)';
-    const price     = r.price > 0 ? `PKR ${r.price.toLocaleString()}` : '—';
+    const price     = getProductPrice(r.barcode);
+    const priceStr  = price > 0 ? `PKR ${price.toLocaleString()}` : '—';
     const statusCls = isInStock ? 'stk-ok' : 'stk-out';
     const statusTxt = isInStock ? 'In Stock' : 'Out';
     return `<tr style="background:${isInStock?'':'#fff8f8'}">
@@ -1218,7 +1262,7 @@ function searchInv(q, oid){
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;font-size:14px;color:${balColor};text-align:center">${r.balanceQty.toFixed(0)}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:13px;color:${r.holdQty>0?'var(--or)':'var(--m2)'};text-align:center">${r.holdQty.toFixed(0)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${price}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${priceStr}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);text-align:center"><span class="${statusCls}" style="font-size:11px;padding:2px 8px;border-radius:20px">${statusTxt}</span></td>
     </tr>`;
   }).join('');

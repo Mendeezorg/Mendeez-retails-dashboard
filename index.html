@@ -1128,11 +1128,10 @@ function renderInvPage(oid, page, showZero){
   const rows = slice.map(r => {
     const imgUrl  = getProductImage(r.barcode);
     const title   = getProductTitle(r.barcode) || '—';
+    const safeUrl   = imgUrl ? imgUrl.replace(/'/g,'%27') : '';
+    const safeTitle = title.replace(/'/g,'%27');
     const imgHtml = imgUrl
-      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--b);cursor:zoom-in" loading="lazy"
-           onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"
-           onclick="openImgLightbox('${imgUrl.replace(/'/g,"\'")}','${title.replace(/'/g,"\'")}')"`
-      + ` onerror="this.outerHTML='<div style=&quot;width:44px;height:44px;border-radius:6px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:18px&quot;>📦</div>'">`
+      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--b);cursor:zoom-in" loading="lazy" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" onclick="openImgLightbox('${safeUrl}','${safeTitle}')" onerror="this.style.display='none'">`
       : `<div style="width:44px;height:44px;border-radius:6px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
 
     const isInStock = r.balanceQty > 0;
@@ -1163,77 +1162,64 @@ function renderInvPage(oid, page, showZero){
 
 
 function searchInv(q, oid){
-  const data     = _invData[oid];
-  const bodyEl   = document.getElementById('invBody_'+oid);
-  const showZero = document.getElementById('invShowZero_'+oid)?.checked ?? false;
+  const data   = _invData[oid];
+  const bodyEl = document.getElementById('invBody_'+oid);
   if(!bodyEl) return;
 
-  // Empty search — show prompt
-  if(!q || q.trim().length < 2){
-    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">Search a barcode or product name above</td></tr>`;
+  // Empty search — show full table
+  if(!q || q.trim().length < 1){
+    renderInvPage(oid, 0);
     return;
   }
 
   if(!data){
-    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Inventory still loading, please wait...</td></tr>`;
+    bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Load inventory first</td></tr>`;
     return;
   }
 
   const lq = q.toLowerCase().trim();
 
-  // Find all matching records — by barcode OR by product title (all variants)
-  // First find matching titles
+  // Match by barcode OR product title — show all matching including zero stock
   const matchedTitles = new Set(
-    data
-      .filter(r => {
-        const title = getProductTitle(r.barcode).toLowerCase();
-        return r.barcode.toLowerCase().includes(lq) || title.includes(lq);
-      })
-      .map(r => getProductTitle(r.barcode))
-      .filter(t => t)
+    data.filter(r => {
+      const title = (getProductTitle(r.barcode)||'').toLowerCase();
+      return r.barcode.toLowerCase().includes(lq) || title.includes(lq);
+    }).map(r => getProductTitle(r.barcode)).filter(Boolean)
   );
 
-  // Then get ALL variants with those titles (all sizes/colors of matched products)
   const filtered = data.filter(r => {
-    const title = getProductTitle(r.barcode);
-    const barcodeMatch = r.barcode.toLowerCase().includes(lq);
-    const titleMatch   = matchedTitles.has(title);
-    const stockOk      = showZero || r.totalStock > 0;
-    return (barcodeMatch || titleMatch) && stockOk;
+    const title = getProductTitle(r.barcode) || '';
+    return r.barcode.toLowerCase().includes(lq) || matchedTitles.has(title);
   });
 
   if(filtered.length === 0){
-    bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No results found for "<strong>${q}</strong>"</td></tr>`;
+    bodyEl.innerHTML = `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">No results for "<strong>${q}</strong>"</td></tr>`;
     return;
   }
 
-  const stripped = (s) => s ? String(s).replace(/^0+/,'') : '';
-
   bodyEl.innerHTML = filtered.map(r => {
     const imgUrl  = getProductImage(r.barcode);
-    const title   = (getProductTitle(r.barcode)||'').replace(/'/g,"\\'");
-    const imgSrc  = imgUrl.replace(/'/g,"\\'");
+    const title   = getProductTitle(r.barcode) || '—';
     const imgHtml = imgUrl
-      ? `<img src="${imgUrl}"
-           style="width:38px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--b);cursor:zoom-in;transition:transform .15s"
+      ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--b);cursor:zoom-in"
            loading="lazy"
-           onmouseover="this.style.transform='scale(1.2)'"
-           onmouseout="this.style.transform='scale(1)'"
-           onclick="openImgLightbox('${imgSrc}','${title}')"
-           onerror="this.outerHTML='<div style=&quot;width:38px;height:38px;border-radius:5px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:16px&quot;>📦</div>'">`
-      : `<div style="width:38px;height:38px;border-radius:5px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:16px">📦</div>`;
-    const stCls = r.totalStock===0?'stk-out':r.balanceQty<5?'stk-low':'stk-ok';
-    const stTxt = r.totalStock===0?'Out':r.balanceQty<5?'Low':'OK';
-    const disc  = r.discountedPrice>0?`<br><span style="font-size:10px;color:var(--g)">${r.discountedPrice.toLocaleString()}</span>`:'';
-    return `<tr>
+           onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"
+           onclick="openImgLightbox('${imgUrl.replace(/'/g,"\\'")}','${title.replace(/'/g,"\\'")}')"
+           onerror="this.style.display='none'">`
+      : `<div style="width:44px;height:44px;border-radius:6px;border:1px dashed var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`;
+    const isInStock = r.balanceQty > 0;
+    const balColor  = isInStock ? 'var(--g)' : 'var(--r)';
+    const price     = r.price > 0 ? `PKR ${r.price.toLocaleString()}` : '—';
+    const statusCls = isInStock ? 'stk-ok' : 'stk-out';
+    const statusTxt = isInStock ? 'In Stock' : 'Out';
+    return `<tr style="background:${isInStock?'':'#fff8f8'}">
       <td style="padding:6px 10px;border-bottom:1px solid var(--b)">${imgHtml}</td>
       <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px;color:#888">${r.barcode}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px">${getProductTitle(r.barcode)||'—'}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.balanceQty>0?'var(--g)':'var(--r)'}">${r.balanceQty.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;color:${r.totalStock>0?'var(--bl)':'var(--r)'}">${r.totalStock.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);color:${r.holdQty>0?'var(--or)':'var(--m2)'}">${r.holdQty.toFixed(1)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:11px">PKR ${r.price.toLocaleString()}${disc}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--b)"><span class="${stCls}">${stTxt}</span></td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-weight:700;font-size:14px;color:${balColor};text-align:center">${r.balanceQty.toFixed(0)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:13px;color:${r.holdQty>0?'var(--or)':'var(--m2)'};text-align:center">${r.holdQty.toFixed(0)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:12px">${price}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--b);text-align:center"><span class="${statusCls}" style="font-size:11px;padding:2px 8px;border-radius:20px">${statusTxt}</span></td>
     </tr>`;
   }).join('');
 }

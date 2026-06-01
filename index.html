@@ -1016,59 +1016,9 @@ async function runInvQueue(){
 const INV_PAGE_SIZE = 100; // rows rendered at a time
 let _invData = {}; // oid → full normalised array
 
-// Split [dateFrom, dateTo] into yearly sub-ranges to avoid 524 timeouts on large outlets.
-// Each chunk covers at most one calendar year so the upstream response stays under ~25s.
-function buildDateChunks(fromDateStr, toDateStr){
-  function parseGtech(s){ const [m,d,y]=s.split('/'); return new Date(+y,+m-1,+d); }
-  function fmtGtech(dt){ return `${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')}/${dt.getFullYear()}`; }
-  function addDays(dt, n){ const d=new Date(dt); d.setDate(d.getDate()+n); return d; }
+// G-Tech chunked fetching is handled inside fetchGtechInventory
 
-  const start   = parseGtech(fromDateStr);
-  const end     = parseGtech(toDateStr);
 
-  // Cutoffs from today
-  const cutoff1mo  = addDays(end, -90);   // last 3 months  → weekly chunks (7 days)
-  const cutoff6mo  = addDays(end, -180);  // last 6 months  → monthly chunks (30 days)
-  const cutoff12mo = addDays(end, -365);  // last 12 months → 3-month chunks
-  // older → 6-month chunks
-
-  const chunks = [];
-  let cur = new Date(start);
-
-  while(cur <= end){
-    let step; // in days
-    if     (cur >= cutoff1mo)  step = 7;    // weekly
-    else if(cur >= cutoff6mo)  step = 30;   // monthly
-    else if(cur >= cutoff12mo) step = 90;   // quarterly
-    else                       step = 180;  // 6-monthly
-
-    const chunkEnd     = addDays(cur, step - 1);
-    const effectiveEnd = chunkEnd < end ? chunkEnd : end;
-    chunks.push({
-      from: fmtGtech(cur) + ' 00:00:00',
-      to  : fmtGtech(effectiveEnd) + ' 23:59:59',
-    });
-    cur = addDays(effectiveEnd, 1);
-  }
-  return chunks;
-}
-
-async function fetchGtechChunk(locCode, chunk, apiKey){
-  const url = `${GTECH_PROXY}?API=${apiKey}&DateFrom=${encodeURIComponent(chunk.from)}&DateTo=${encodeURIComponent(chunk.to)}&Location=${encodeURIComponent(locCode)}`;
-  const res  = await fetch(url);
-  if(!res.ok){
-    const body = await res.text().catch(()=>'');
-    // Distinguish clean timeout (504) from other errors
-    if(res.status === 504){ throw new Error('TIMEOUT'); }
-    throw new Error('HTTP ' + res.status);
-  }
-  const text = await res.text();
-  let rows;
-  try{ rows = JSON.parse(text); } catch(e){ throw new Error('Invalid JSON'); }
-  if(rows && rows.error === 'TIMEOUT') throw new Error('TIMEOUT');
-  if(!Array.isArray(rows)) rows = rows.data || rows.result || rows.records || [];
-  return rows;
-}
 
 async function fetchGtechInventory(oid){
   const locCode  = GTECH_LOC[oid] || '';
@@ -1091,7 +1041,7 @@ async function fetchGtechInventory(oid){
   const chunks = [];
   const addDays2 = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
   const fmtDate  = d => String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'/'+d.getFullYear();
-  let cur = new Date(2026, 0, 1);
+  let cur = new Date(2025, 0, 1);  // Start from Jan 2025 to capture full running balance
   while(cur <= today){
     const effEnd = addDays2(cur, 13) < today ? addDays2(cur, 13) : today;
     chunks.push({

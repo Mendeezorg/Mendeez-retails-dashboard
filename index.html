@@ -1077,56 +1077,95 @@ async function fetchGtechInventory(oid){
   const bodyEl   = document.getElementById('invBody_'+oid);
   const summEl   = document.getElementById('invSummary_'+oid);
 
-  // Single request — Jan 2026 to today only
-  // Current stock balances are reflected in recent data; no need for full history
-  const today    = new Date();
-  const mm       = String(today.getMonth()+1).padStart(2,'0');
-  const dd       = String(today.getDate()).padStart(2,'0');
-  const yyyy     = today.getFullYear();
-  const todayFmt = `${mm}/${dd}/${yyyy}`;
-  const dateFrom = '01/01/2026 00:00:00';
-  const dateTo   = `${todayFmt} 23:59:59`;
-
-  const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(dateFrom)}&DateTo=${encodeURIComponent(dateTo)}&Location=${encodeURIComponent(locCode)}`;
-
-  const setBanner = (html, cls="al-blue") => {
+  const setBanner = (html, cls='al-blue') => {
     if(!bannerEl) return;
-    bannerEl.style.cssText = cls === "al-blue"
-      ? "background:var(--bld);border:1px solid #bfdbfe;color:var(--bl);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px"
-      : "background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px";
+    bannerEl.style.cssText = cls === 'al-blue'
+      ? 'background:var(--bld);border:1px solid #bfdbfe;color:var(--bl);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px'
+      : 'background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px';
     bannerEl.innerHTML = html;
   };
 
+  // Build 2-week chunks: Jan 2026 → today
+  // 2 weeks per chunk ~2-5s each, well under 29s worker timeout
+  const today = new Date();
+  const chunks = [];
+  const addDays2 = (d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  const fmtDate  = d => String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'/'+d.getFullYear();
+  let cur = new Date(2026, 0, 1);
+  while(cur <= today){
+    const effEnd = addDays2(cur, 13) < today ? addDays2(cur, 13) : today;
+    chunks.push({
+      from  : fmtDate(cur)+' 00:00:00',
+      to    : fmtDate(effEnd)+' 23:59:59',
+      label : fmtDate(cur)+' → '+fmtDate(effEnd)
+    });
+    cur = addDays2(effEnd, 1);
+  }
+  const totalChunks = chunks.length;
+
   if(statusEl) statusEl.textContent = '⏳ Fetching…';
-  setBanner(`<span>⏳</span><span>Loading stock data from Jan 2026…</span>`);
+  setBanner(`<span>⏳</span><span>Loading stock (1/${totalChunks} months)…</span>`);
   if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--m);font-family:var(--mono);font-size:12px">⏳ Loading…</td></tr>`;
   if(summEl) summEl.style.display='none';
 
   const t0 = Date.now();
+  const allRows = [];
+  let failedChunks = 0;
 
-  try {
-    const res = await fetch(url);
-    if(!res.ok){
-      const body = await res.text().catch(()=>'');
-      let parsed; try{ parsed=JSON.parse(body); }catch(e){}
-      if(res.status===504 || (parsed&&parsed.error==='TIMEOUT')) throw new Error('TIMEOUT — G-Tech too slow. Try again.');
-      throw new Error('HTTP ' + res.status);
+  for(let i = 0; i < chunks.length; i++){
+    const chunk = chunks[i];
+    if(statusEl) statusEl.textContent = `⏳ ${chunk.label} (${i+1}/${totalChunks})…`;
+    setBanner(`<span>⏳</span><span>Loading ${chunk.label}… (${i+1}/${totalChunks})</span>`);
+
+    const url = `${GTECH_PROXY}?API=${GTECH_API_KEY}&DateFrom=${encodeURIComponent(chunk.from)}&DateTo=${encodeURIComponent(chunk.to)}&Location=${encodeURIComponent(locCode)}`;
+
+    let attempt = 0, success = false;
+    while(attempt < 2 && !success){
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const text = await res.text();
+        let rows; try{ rows=JSON.parse(text); }catch(e){ throw new Error('Invalid JSON'); }
+        if(rows && rows.error==='TIMEOUT') throw new Error('TIMEOUT');
+        if(!Array.isArray(rows)) rows = rows.data||rows.result||rows.records||[];
+        allRows.push(...rows);
+        success = true;
+      } catch(err){
+        attempt++;
+        if(attempt >= 2){
+          console.warn(`G-Tech ${chunk.label} failed: ${err.message}`);
+          failedChunks++;
+        } else {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
     }
-    const text = await res.text();
-    const rows = (() => {
-      let r; try{ r=JSON.parse(text); }catch(e){ throw new Error('Invalid JSON from G-Tech'); }
-      return Array.isArray(r) ? r : (r.data||r.result||r.records||[]);
-    })();
+  }
+
+  if(allRows.length === 0 && failedChunks === totalChunks){
+    if(statusEl) statusEl.textContent = '⚠ Error';
+    setBanner('<span>⚠</span><span>All months failed — G-Tech unreachable. Try again.</span>', 'err');
+    if(bodyEl) bodyEl.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: G-Tech API unreachable</td></tr>`;
+    return;
+  }
+
+  if(statusEl) statusEl.textContent = '⚙ Processing…';
+  if(failedChunks > 0){
+    setBanner(`<span>⚠</span><span>${failedChunks} month(s) failed — showing partial data.</span>`, 'err');
+    setTimeout(()=>{ if(bannerEl) bannerEl.style.display='none'; }, 6000);
+  }
+
+  try{
     // Normalise
-    const rawData = rows.map(r=>({
-      barcode        : String(r.barcode       ?? r.Barcode       ?? ''),
-      location       : String(r.location      ?? r.Location      ?? ''),
-      balanceQty     : parseFloat(r.balanceQty    ?? r.BalanceQty    ?? 0),
-      holdQty        : parseFloat(r.holdQty        ?? r.HoldQty        ?? 0),
-      totalStock     : parseFloat(r.totalStock     ?? r.TotalStock     ?? 0),
-      price          : parseFloat(r.price          ?? r.Price          ?? 0),
+    const rawData = allRows.map(r=>({
+      barcode        : String(r.barcode        ?? r.Barcode        ?? ''),
+      location       : String(r.location       ?? r.Location       ?? ''),
+      balanceQty     : parseFloat(r.balanceQty     ?? r.BalanceQty     ?? 0),
+      holdQty        : parseFloat(r.holdQty         ?? r.HoldQty         ?? 0),
+      totalStock     : parseFloat(r.totalStock      ?? r.TotalStock      ?? 0),
+      price          : parseFloat(r.price           ?? r.Price           ?? 0),
       discountedPrice: parseFloat(r.discountedPrice ?? r.DiscountedPrice ?? 0),
-      lastUpdated    : String(r.lastUpdated   ?? r.LastUpdated   ?? ''),
+      lastUpdated    : String(r.lastUpdated    ?? r.LastUpdated    ?? ''),
     }));
 
     // Deduplicate — keep only the LATEST record per barcode
@@ -1141,7 +1180,6 @@ async function fetchGtechInventory(oid){
       }
     });
     const data = Object.values(latestMap);
-
     _invData[oid] = data;
 
     // Stats
@@ -1154,13 +1192,12 @@ async function fetchGtechInventory(oid){
     if(summEl){
       summEl.style.display='flex';
       summEl.innerHTML=[
-        {l:'Total SKUs',  v:data.length,          c:'var(--bl)'},
-        {l:'In Stock',    v:inStock,               c:'var(--g)'},
-        {l:'Zero Stock',  v:zeroStock,             c:'var(--r)'},
-        {l:'Balance Qty', v:totalBal.toFixed(0),  c:'#111'},
-        {l:'Total Stock', v:totalStk.toFixed(0),  c:'var(--or)'},
-        {l:'Load Time',   v:ms<60000?ms+'ms':Math.round(ms/1000)+'s', c:'var(--m)'},
-
+        {l:'Total SKUs',  v:data.length,                                    c:'var(--bl)'},
+        {l:'In Stock',    v:inStock,                                         c:'var(--g)'},
+        {l:'Zero Stock',  v:zeroStock,                                       c:'var(--r)'},
+        {l:'Balance Qty', v:totalBal.toFixed(0),                            c:'#111'},
+        {l:'Total Stock', v:totalStk.toFixed(0),                            c:'var(--or)'},
+        {l:'Load Time',   v:ms<60000?ms+'ms':Math.round(ms/1000)+'s',      c:'var(--m)'},
       ].map(s=>`<div style="background:var(--s);border:1px solid var(--b);border-radius:7px;padding:8px 14px;text-align:center;min-width:90px">
         <div style="font-size:17px;font-weight:700;font-family:var(--mono);color:${s.c}">${s.v}</div>
         <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--m);margin-top:2px">${s.l}</div>
@@ -1169,17 +1206,14 @@ async function fetchGtechInventory(oid){
 
     if(statusEl) statusEl.textContent = `✓ ${data.length} SKUs · ${new Date().toLocaleTimeString()}`;
     if(bannerEl) bannerEl.style.display='none';
-    // Don't auto-render — wait for search
 
   } catch(err){
     if(statusEl) statusEl.textContent = '⚠ Error';
-    if(bannerEl){
-      bannerEl.style.cssText='background:var(--rd);border:1px solid var(--r);color:var(--r);border-radius:6px;padding:10px 14px;font-size:12px;display:flex;gap:8px;margin-bottom:12px';
-      bannerEl.innerHTML=`<span>⚠</span><span>${err.message}${err.message.includes('fetch')||err.message.includes('Failed')?' — possible CORS issue. Try opening URL directly in browser.':''}</span>`;
-    }
+    setBanner(`<span>⚠</span><span>${err.message}</span>`, 'err');
     if(bodyEl) bodyEl.innerHTML=`<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--r);font-family:var(--mono);font-size:12px">Error: ${err.message}</td></tr>`;
   }
 }
+
 
 function renderInvPage(oid, page, showZero){
   const data     = _invData[oid] || [];

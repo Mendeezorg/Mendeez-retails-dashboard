@@ -186,7 +186,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .cs-kpi-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.03em}
 
 /* ── LOGIN ── */
-#loginOverlay{position:fixed;inset:0;background:#0d0d0d;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;}
+#loginOverlay{display:none!important;}
 .login-card{background:#161616;border:1px solid #2a2a2a;border-radius:14px;padding:36px 32px;width:100%;max-width:380px;}
 .login-logo{font-size:20px;font-weight:800;color:#e8c547;letter-spacing:0.05em;margin-bottom:4px;}
 .login-sub{font-size:11px;color:#555;margin-bottom:28px;}
@@ -349,22 +349,24 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Net Sales</div><div class="sv green shimmer" id="s-shopify-net"></div><div class="ssub" id="s-shopify-net-sub">After discounts & returns</div></div>
   </div>
 
-  <!-- ── PERF REPORT (SHEET) CARDS ── -->
+  <!-- ── OMS XSTACK CARDS ── -->
   <div class="sh" style="margin-bottom:8px">
     <div class="st" style="display:flex;align-items:center;gap:7px">
       <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block"></span>
-      Perf Report 26 — MTD
+      OMS — Xstack Live Data
     </div>
+    <button onclick="xDebugTest()" style="font-size:10px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--mono)">🔍 Debug June</button>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px">
-    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Total Dispatched MTD</div><div class="sv blue shimmer" id="s-disp">—</div><div class="ssub" id="s-disp-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Total Delivered</div><div class="sv green shimmer" id="s-delivered"></div><div class="ssub" id="s-delivered-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="s-cancel-mtd"></div><div class="ssub" id="s-cancel-mtd-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="s-cancel-cf"></div><div class="ssub" id="s-cancel-cf-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Return MTD</div><div class="sv red shimmer" id="s-returns-mtd"></div><div class="ssub" id="s-returns-mtd-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Return CF</div><div class="sv red shimmer" id="s-returns-cf"></div><div class="ssub" id="s-returns-cf-sub">Perf Report 26</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Order Adj. Returns</div><div class="sv red shimmer" id="s-order-adj"></div><div class="ssub" id="s-order-adj-sub">Perf Report 26</div></div>
+  <div id="xs-debug-output" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-bottom:10px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Dispatched MTD</div><div class="sv blue shimmer" id="xs-dispatched">—</div><div class="ssub">Current month</div></div>
+    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Delivered MTD</div><div class="sv green shimmer" id="xs-delivered">—</div><div class="ssub">Current month</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="xs-cancel-mtd">—</div><div class="ssub">Current month placed</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="xs-cancel-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns MTD</div><div class="sv red shimmer" id="xs-return-mtd">—</div><div class="ssub">Current month placed</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns CF</div><div class="sv red shimmer" id="xs-return-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
   </div>
+
   <!-- DATE-WISE SHOPIFY BREAKDOWN -->
   <div class="sh" style="margin-top:4px">
     <div class="st">📅 Date-wise Shopify Breakdown</div>
@@ -416,6 +418,80 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div><div class="dt">Ads Performance</div><div class="dsub">From Google Sheet · <span id="adsDateLbl">—</span></div></div>
     <button class="btn btn-s btn-sm" onclick="fetchSheets()">↻ Refresh</button>
   </div>
+  <!-- Target Cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px" id="adsTargetCards">
+    <!-- Gross Target -->
+    <div style="background:var(--surface);border:1px solid var(--accent-dim);border-radius:10px;padding:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">🎯 Gross Target</div>
+        <button onclick="openTargetModal('gross')" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:5px;color:var(--accent);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;font-family:var(--mono)">Edit</button>
+      </div>
+      <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--accent)" id="grossTargetVal">—</div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+          <span id="grossAchievedLbl">Achieved: —</span>
+          <span id="grossAchievedPct" style="font-weight:700;color:var(--accent)">—%</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden">
+          <div id="grossProgressBar" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .5s"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Net Target -->
+    <div style="background:var(--surface);border:1px solid var(--green-dim);border-radius:10px;padding:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">🎯 Net Target</div>
+        <button onclick="openTargetModal('net')" style="background:var(--green-dim);border:1px solid var(--green);border-radius:5px;color:var(--green);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;font-family:var(--mono)">Edit</button>
+      </div>
+      <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--green)" id="netTargetVal">—</div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+          <span id="netAchievedLbl">Achieved: —</span>
+          <span id="netAchievedPct" style="font-weight:700;color:var(--green)">—%</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden">
+          <div id="netProgressBar" style="height:100%;width:0%;background:var(--green);border-radius:4px;transition:width .5s"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Spend Target -->
+    <div style="background:var(--surface);border:1px solid var(--red-dim);border-radius:10px;padding:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--red)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">💸 Spend Budget</div>
+        <button onclick="openTargetModal('spend')" style="background:var(--red-dim);border:1px solid var(--red);border-radius:5px;color:var(--red);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;font-family:var(--mono)">Edit</button>
+      </div>
+      <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--red)" id="spendTargetVal">—</div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+          <span id="spendUsedLbl">Spent: —</span>
+          <span id="spendUsedPct" style="font-weight:700;color:var(--red)">—%</span>
+        </div>
+        <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden">
+          <div id="spendProgressBar" style="height:100%;width:0%;background:var(--red);border-radius:4px;transition:width .5s"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Target Modal -->
+  <div id="targetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:28px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px" id="targetModalTitle">Set Gross Target</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:18px" id="targetModalMonth"></div>
+      <div class="fg">
+        <div class="fl">Target Amount (PKR)</div>
+        <input class="fi" type="number" id="targetModalInput" placeholder="e.g. 5000000" style="font-size:16px;font-weight:600">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button onclick="saveTarget()" style="flex:1;background:var(--accent);color:#000;border:none;border-radius:7px;padding:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans)">Save Target</button>
+        <button onclick="document.getElementById('targetModal').style.display='none'" style="padding:10px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;font-family:var(--sans)">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Platform filter tabs -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
     <button class="dp active" id="ap-all"      onclick="setAdsPlatform('all',this)">All Platforms</button>
@@ -476,43 +552,41 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <!-- ══ CS & CONFIRMATIONS ══ -->
 <div class="panel" id="panel-cs">
   <div class="ds">
-    <div><div class="dt">CS & Confirmations</div><div class="dsub">Live from Perf Report 26 · Select month below</div></div>
+    <div><div class="dt">CS & Confirmations</div><div class="dsub">Live from Xstack · Supabase agent entries</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select class="fi" id="csMonthSel" style="width:150px" onchange="switchCSMonth()">
-        <option value="">Loading...</option>
-      </select>
       <button class="btn btn-s btn-sm" onclick="openComplaintsPage()" style="border-color:var(--red);color:var(--red)">🔴 Review Complaints</button>
-      <button class="btn btn-s btn-sm" onclick="fetchSheets()">↻ Refresh</button>
     </div>
   </div>
-  <div class="alert al-blue"><div>ℹ</div><div>Pulled automatically from your Perf Report sheet. Shows MTD agent performance and today's date column data.</div></div>
-  <!-- MTD SUMMARY — from Google Sheet -->
-  <div class="sh"><div class="st" id="csMTDHeader">MTD Agent Performance</div></div>
-  <div class="tc" id="csAgentTable"><div class="ldrow"><span class="si"></span>Loading...</div></div>
-  <!-- MANUAL ENTRIES — from Supabase -->
+
+  <!-- XSTACK CARDS — same as overview -->
+  <div class="sh"><div class="st" style="color:var(--accent)">OMS — Xstack Live Data</div></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Dispatched MTD</div><div class="sv blue shimmer" id="cs-xs-dispatched">—</div><div class="ssub">Current month</div></div>
+    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Delivered MTD</div><div class="sv green shimmer" id="cs-xs-delivered">—</div><div class="ssub">Current month</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="cs-xs-cancel-mtd">—</div><div class="ssub">Current month placed</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="cs-xs-cancel-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns MTD</div><div class="sv red shimmer" id="cs-xs-return-mtd">—</div><div class="ssub">Current month placed</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns CF</div><div class="sv red shimmer" id="cs-xs-return-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
+  </div>
+
+  <!-- CANCELLATION REASONS — from Xstack -->
+  <div class="sh"><div class="st">Cancellation Reasons — MTD</div></div>
+  <div class="ic" id="xs-cancel-reasons" style="padding:16px;margin-bottom:4px">
+    <div style="color:var(--muted);font-size:12px">Loading...</div>
+  </div>
+
+  <!-- DAILY AGENT ENTRIES — from Supabase -->
   <div class="sh" style="margin-top:20px"><div class="st" style="color:var(--accent)">📋 Daily Agent Entries</div><div class="ss" id="csEntriesSubtitle"></div></div>
   <div class="tc" id="csEntriesTable"><div class="ldrow"><span class="si"></span>Loading entries...</div></div>
-  <!-- ORDER STATUS -->
-  <div class="sh"><div class="st">Order Status MTD</div></div>
-  <div class="sg" id="csOrderStats">
-    <div class="sc"><div class="sl">Delivered MTD</div><div class="sv shimmer" id="cs-delivered"></div><div class="ssub" id="cs-delivered-sub">—</div></div>
-    <div class="sc"><div class="sl">Cancellations MTD</div><div class="sv shimmer" id="cs-cancel"></div><div class="ssub" id="cs-cancel-sub">—</div></div>
-    <div class="sc"><div class="sl">Cancellations CF</div><div class="sv shimmer" id="cs-cancel-cf"></div><div class="ssub" id="cs-cancel-cf-sub">—</div></div>
-    <div class="sc"><div class="sl">Returns MTD</div><div class="sv shimmer" id="cs-returns"></div><div class="ssub" id="cs-returns-sub">—</div></div>
-    <div class="sc"><div class="sl">Returns CF</div><div class="sv shimmer" id="cs-returns-cf"></div><div class="ssub" id="cs-returns-cf-sub">—</div></div>
-    <div class="sc"><div class="sl">Order Adjustment (Returns)</div><div class="sv shimmer" id="cs-order-adj"></div><div class="ssub" id="cs-order-adj-sub">—</div></div>
-  </div>
-  <!-- EWH WAREHOUSE -->
-  <div class="sh"><div class="st">Warehouse (EWH) MTD</div></div>
-  <div class="sg" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-    <div class="sc"><div class="sl">Total Dispatch Value</div><div class="sv amber" id="cs-wh-val">—</div></div>
-    <div class="sc"><div class="sl">Units Dispatched</div><div class="sv" id="cs-wh-units">—</div></div>
-    <div class="sc"><div class="sl">Return Units</div><div class="sv red" id="cs-wh-rtn">—</div></div>
-    <div class="sc"><div class="sl">Exchanges</div><div class="sv" id="cs-wh-exch">—</div></div>
-  </div>
-  <!-- CANCELLATION REASONS -->
-  <div class="sh"><div class="st">Cancellation Reasons MTD</div></div>
-  <div class="tc" id="cancelReasonsTable"><div class="ldrow"><span class="si"></span>Loading...</div></div>
+
+  <!-- hidden compat elements -->
+  <div style="display:none" id="csAgentTable"></div>
+  <div style="display:none" id="csMTDHeader"></div>
+  <div style="display:none" id="csMonthSel"></div>
+  <div style="display:none" id="csOrderStats"></div>
+  <div style="display:none" id="cancelReasonsTable"></div>
 </div>
 
 <!-- ══ PRODUCTS ══ -->
@@ -1345,6 +1419,8 @@ async function reloadShopifyData(){
     document.getElementById('dActiveLbl').textContent='📅 '+rangeLabel();
     if(_csRows.length){try{processCS(_csRows);}catch(e){console.warn('processCS error:',e.message);}}
     renderDailyStats();
+    loadAdsTargets(); // reload targets for selected month
+    loadXstackData(); // reload Xstack OMS data
     // Defer heavy renders to next frame so UI stays responsive
     setTimeout(()=>{
       renderWeeklyTop20();
@@ -1768,6 +1844,16 @@ function renderAds(){
     </div>`;
   }).join('');
   if(_adsPlatform==='all'){
+    const _gt=window._adsTargets||{};
+    const _grossT=_gt.gross||0;
+    const _netT=_gt.net||0;
+    const _grossSales=ordersData.reduce((s,o)=>s+parseFloat(o.total_line_items_price||0),0);
+    const _disc=ordersData.reduce((s,o)=>s+parseFloat(o.total_discounts||0),0);
+    const _netSales=_grossSales-_disc-(window._shopifyReturnValue||0);
+    const _grossPct=_grossT>0?Math.min(Math.round(_grossSales/_grossT*100),999):0;
+    const _netPct=_netT>0?Math.min(Math.round(_netSales/_netT*100),999):0;
+    const _spendPct=_grossSales>0?Math.round(totS/_grossSales*100):0;
+    const _pctCol=p=>p>=80?'var(--green)':p>=50?'var(--accent)':'var(--red)';
     html+=`<div class="pc" style="border-color:var(--accent-dim)">
       <div class="pn"><div class="pi ix">Σ</div>Combined</div>
       <div class="kr">
@@ -1779,7 +1865,13 @@ function renderAds(){
         <div><div class="kl">Blended ROAS</div><div class="kv ${rcol(totRoas)}">${totRoas>0?totRoas.toFixed(2)+'x':'—'}</div></div>
         <div><div class="kl">Orders</div><div class="kv">${totO||'—'}</div></div>
       </div>
-      <div style="margin-top:8px"><div class="kl">Blended CPA</div><div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px">${totO>0?'PKR '+fmt(Math.round(totS/totO)):'—'}</div></div>
+      <div style="margin-top:8px"><div class="kl">Blended CPA</div><div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px">${ordersData.length>0?'PKR '+fmt(Math.round(totS/ordersData.length)):'—'}</div><div style="font-size:9px;color:var(--muted2);margin-top:1px">${ordersData.length} Shopify orders</div></div>
+      <div class="div" style="margin:10px 0"></div>
+      <div class="kr">
+        <div><div class="kl">Gross Achieved</div><div class="kv" style="color:${_pctCol(_grossPct)}">${_grossT>0?_grossPct+'%':'—'}</div></div>
+        <div><div class="kl">Net Achieved</div><div class="kv" style="color:${_pctCol(_netPct)}">${_netT>0?_netPct+'%':'—'}</div></div>
+      </div>
+      <div style="margin-top:8px"><div class="kl">Spend % of Gross</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${_pctCol(100-_spendPct)};margin-top:2px">${_grossSales>0?_spendPct+'%':'—'}</div></div>
     </div>`;
   }
   document.getElementById('platCards').innerHTML=html;
@@ -2706,6 +2798,7 @@ async function loadWeeklyOrders(){
   renderWeeklyTop20();
   renderNoSaleDiagnosis();
   renderSpark();
+  if(typeof renderAdsTargetCards==='function') renderAdsTargetCards();
 }
 
 function renderWeeklyTop20(){
@@ -3171,6 +3264,7 @@ function switchTab(name,el){
   if(name==='report')buildReport();
   if(name==='report')buildReport();
   if(name==='cs') setTimeout(renderCSFromSupabase,200);
+  if(name==='ads'){ loadAdsTargets(); }
   if(name==='cards') loadCardData();
   if(name==='gtech'){ gtechinvPopulateSelect(); if(Object.keys(_gtechStockData).length===0) gtechLoadAll(); }
   if(name==='sorter'){
@@ -3386,9 +3480,14 @@ window.addEventListener('load',()=>{
   document.getElementById('cfgCrr').value=CRR_TAB;
   document.getElementById('cfgCS').value=CS_TAB;
   // Auto-connect silently — no overlay, just load in background
+  // Auto-login as manager — no password required
+  currentUser = {username:'admin', role:'manager'};
+  applyRoleView('manager');
   if(STORE&&TOKEN){
     loadAll().catch(e=>console.warn('Auto-connect failed:',e));
   }
+  renderCSFromSupabase();
+  loadXstackData();
   // Restore manual field values
   if(manualData.stock)document.getElementById('i-stock').value=manualData.stock;
   if(manualData.web)document.getElementById('i-web').value=manualData.web;
@@ -4242,6 +4341,332 @@ function upFormReset(){
   document.getElementById('pf-title').focus();
 }
 
+// ══════════════════════════════════════════════════
+// ADS TARGETS — Gross & Net monthly targets
+// ══════════════════════════════════════════════════
+window._adsTargets = {gross:0, net:0};
+let _targetEditing = 'gross';
+
+function adsTargetMonthKey(){
+  // Use the selected date range's month, not today's month
+  const {from} = getRange();
+  const d = from || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+
+async function loadAdsTargets(){
+  const key = adsTargetMonthKey();
+  const rows = await DB.get('ads_targets', `month=eq.${key}`);
+  if(rows && rows.length){
+    window._adsTargets = {gross: rows[0].gross_target||0, net: rows[0].net_target||0, spend: rows[0].spend_target||0};
+  } else {
+    window._adsTargets = {gross:0, net:0, spend:0};
+  }
+  renderAdsTargetCards();
+}
+
+async function saveTarget(){
+  const val = parseFloat(document.getElementById('targetModalInput').value)||0;
+  if(!val){ alert('Please enter a valid amount'); return; }
+  const key = adsTargetMonthKey();
+  window._adsTargets[_targetEditing] = val;
+  // Upsert to Supabase
+  await DB.upsert('ads_targets', {
+    month: key,
+    gross_target: window._adsTargets.gross,
+    net_target:   window._adsTargets.net,
+    spend_target: window._adsTargets.spend||0,
+    updated_at:   new Date().toISOString()
+  }, 'month');
+  document.getElementById('targetModal').style.display='none';
+  renderAdsTargetCards();
+  // Re-render platform cards to update combined card %
+  if(typeof renderAdsCards==='function') renderAdsCards();
+}
+
+function openTargetModal(type){
+  _targetEditing = type;
+  const isGross = type==='gross';
+  const n=new Date();
+  document.getElementById('targetModalTitle').textContent = isGross?'Set Gross Target':type==='net'?'Set Net Target':'Set Ad Spend Budget';
+  const {from:_mFrom}=getRange();
+  const _mDate=_mFrom||new Date();
+  document.getElementById('targetModalMonth').textContent = _mDate.toLocaleString('en-GB',{month:'long',year:'numeric'});
+  document.getElementById('targetModalInput').value = window._adsTargets[type]||'';
+  document.getElementById('targetModalInput').placeholder = type==='spend'?'e.g. 1500000':'e.g. 5000000';
+  document.getElementById('targetModal').style.display='flex';
+  setTimeout(()=>document.getElementById('targetModalInput').focus(),100);
+}
+
+function renderAdsTargetCards(){
+  const gt = window._adsTargets||{};
+  const grossT = gt.gross||0;
+  const netT   = gt.net||0;
+
+  // Get live Shopify values
+  const grossSales = ordersData.reduce((s,o)=>s+parseFloat(o.total_line_items_price||0),0);
+  const disc       = ordersData.reduce((s,o)=>s+parseFloat(o.total_discounts||0),0);
+  const netSales   = grossSales - disc - (window._shopifyReturnValue||0);
+
+  const grossPct = grossT>0 ? Math.min(Math.round(grossSales/grossT*100),999) : 0;
+  const netPct   = netT>0   ? Math.min(Math.round(netSales/netT*100),999)     : 0;
+
+  const pctColor = p => p>=80?'var(--green)':p>=50?'var(--accent)':'var(--red)';
+  const barW     = p => Math.min(p,100)+'%';
+
+  // Gross card
+  const gv=document.getElementById('grossTargetVal');
+  if(gv) gv.textContent = grossT>0?'PKR '+fmt(grossT):'Not set';
+  const ga=document.getElementById('grossAchievedLbl');
+  if(ga) ga.textContent = 'Achieved: '+(grossSales>0?'PKR '+fmt(grossSales):'—');
+  const gp=document.getElementById('grossAchievedPct');
+  if(gp){ gp.textContent=grossT>0?grossPct+'%':'—'; gp.style.color=grossT>0?pctColor(grossPct):'var(--muted)'; }
+  const gb=document.getElementById('grossProgressBar');
+  if(gb){ gb.style.width=grossT>0?barW(grossPct):'0%'; gb.style.background=pctColor(grossPct); }
+
+  // Net card
+  const nv=document.getElementById('netTargetVal');
+  if(nv) nv.textContent = netT>0?'PKR '+fmt(netT):'Not set';
+  const na=document.getElementById('netAchievedLbl');
+  if(na) na.textContent = 'Achieved: '+(netSales>0?'PKR '+fmt(netSales):'—');
+  const np=document.getElementById('netAchievedPct');
+  if(np){ np.textContent=netT>0?netPct+'%':'—'; np.style.color=netT>0?pctColor(netPct):'var(--muted)'; }
+  const nb=document.getElementById('netProgressBar');
+  if(nb){ nb.style.width=netT>0?barW(netPct):'0%'; nb.style.background=pctColor(netPct); }
+
+  // Spend card — get actual spend from ads data
+  const spendT = gt.spend||0;
+  const actualSpend = (window._adsTot||{}).spend||0;
+  const spendPct = spendT>0?Math.min(Math.round(actualSpend/spendT*100),999):0;
+  // For spend: lower % is better (green=low, red=high)
+  const spendColor = p => p>=90?'var(--red)':p>=70?'var(--accent)':'var(--green)';
+  const sv=document.getElementById('spendTargetVal');
+  if(sv) sv.textContent = spendT>0?'PKR '+fmt(spendT):'Not set';
+  const sul=document.getElementById('spendUsedLbl');
+  if(sul) sul.textContent = 'Spent: '+(actualSpend>0?'PKR '+fmt(actualSpend):'—');
+  const sp=document.getElementById('spendUsedPct');
+  if(sp){ sp.textContent=spendT>0?spendPct+'%':'—'; sp.style.color=spendT>0?spendColor(spendPct):'var(--muted)'; }
+  const spb=document.getElementById('spendProgressBar');
+  if(spb){ spb.style.width=spendT>0?barW(spendPct):'0%'; spb.style.background=spendColor(spendPct); }
+}
+
+
+// ══════════════════════════════════════════════════
+// XSTACK INTEGRATION
+// ══════════════════════════════════════════════════
+const XSTACK_WORKER    = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
+const XSTACK_AUTH_URL  = XSTACK_WORKER + '/xstack-token';
+const XSTACK_ORDERS_URL = XSTACK_WORKER + '/xstack-orders';
+const XSTACK_CLIENT_ID  = 'api-user-peiUUaIuwe';
+const XSTACK_SECRET     = 'PhiVyUF0HG7bLzUeOATb';
+const XSTACK_COMPANY    = '226b5c53476dbeaf';
+const XSTACK_LOCATION   = '1139';
+
+let _xToken = null;
+let _xTokenExpiry = 0;
+
+async function xGetToken(){
+  if(_xToken && Date.now() < _xTokenExpiry - 30000) return _xToken;
+  const res = await fetch(XSTACK_AUTH_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      clientId: XSTACK_CLIENT_ID,
+      clientSecret: XSTACK_SECRET,
+      grantType: 'client_credentials',
+      companyCode: XSTACK_COMPANY
+    })
+  });
+  const data = await res.json();
+  _xToken = data.access_token;
+  _xTokenExpiry = Date.now() + ((data.expires_in||300)-30)*1000;
+  return _xToken;
+}
+
+async function xFetchOrders(status, startDate, endDate){
+  const token = await xGetToken();
+  // Format dates as PKT (+05:00) — use UTC methods since dates are stored as UTC
+  const fmtD = d => {
+    const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
+    const y=pkt.getUTCFullYear(), m=String(pkt.getUTCMonth()+1).padStart(2,'0'), dd=String(pkt.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}T00:00:00%2B05:00`;
+  };
+  const fmtEnd = d => {
+    const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
+    const y=pkt.getUTCFullYear(), m=String(pkt.getUTCMonth()+1).padStart(2,'0'), dd=String(pkt.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}T23:59:59%2B05:00`;
+  };
+
+  let allOrders = [], page = 1;
+  while(true){
+    const url = XSTACK_ORDERS_URL
+      + '?order_status='+encodeURIComponent(status)
+      + '&location_id='+XSTACK_LOCATION
+      + '&start_date='+fmtD(startDate)
+      + '&end_date='+fmtEnd(endDate)
+      + '&size=500&page='+page
+      + '&token='+encodeURIComponent(token);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('Xstack '+status+': '+res.status);
+    const data = await res.json();
+    const orders = data.orders || [];
+    allOrders = allOrders.concat(orders);
+    const totalElements = data.page ? (data.page.total_elements || data.page.totalElements || 0) : 0;
+    if(allOrders.length >= totalElements || orders.length === 0) break;
+    page++;
+  }
+  return allOrders;
+}
+
+function xGetCancelReason(order){
+  const details = order.orders_brand_details || [];
+  const r = details.find(d=>d.attribute==='cancel_return_reason');
+  return r ? r.value : '';
+}
+
+async function xDebugTest(){
+  const out = document.getElementById('xs-debug-output');
+  out.style.display = 'block';
+  out.textContent = 'Testing June 2026...\n';
+  try {
+    const res = await fetch(XSTACK_AUTH_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ clientId:XSTACK_CLIENT_ID, clientSecret:XSTACK_SECRET, grantType:'client_credentials', companyCode:XSTACK_COMPANY })
+    });
+    const data = await res.json();
+    const token = data.access_token;
+    if(!token){ out.textContent += '❌ No token!'; return; }
+
+    const statuses = ['DISPATCHED','ORDER_DELIVERED','DEAD_VIA_CUSTOMER','RETURN_VERIFICATION'];
+    for(const st of statuses){
+      const url = XSTACK_ORDERS_URL
+        + '?order_status='+encodeURIComponent(st)
+        + '&location_id='+XSTACK_LOCATION
+        + '&start_date=2026-06-01T00:00:00%2B05:00'
+        + '&end_date=2026-06-05T23:59:59%2B05:00'
+        + '&size=10&page=1&token='+encodeURIComponent(token);
+      const r = await fetch(url);
+      const d = await r.json();
+      const total = d.page ? (d.page.total_elements||d.page.totalElements||0) : 0;
+      const orders = (d.orders||[]).length;
+      out.textContent += st+': total='+total+', batch='+orders+'\n';
+      if(orders > 0){
+        const o = d.orders[0];
+        out.textContent += '  → First order: '+o.order_id+' | PKR '+o.total_amount_pkr+' | date: '+o.date+'\n';
+      }
+    }
+  } catch(e){ out.textContent += 'ERR: '+e.message; }
+}
+
+async function loadXstackData(){
+  const {from, to} = getRange();
+  if(!from || !to) return;
+
+  // MTD = start of TO's month to end of TO (so if range is in May, shows May data)
+  const toPKT = d => new Date(d.getTime() + PKT_OFFSET_MS);
+  const toPKTdate = toPKT(to);  // use 'to' date to determine which month to show
+  const mtdStart = new Date(Date.UTC(toPKTdate.getUTCFullYear(), toPKTdate.getUTCMonth(), 1) - PKT_OFFSET_MS);
+  // CF = start of previous month to day before MTD start
+  const cfStart  = new Date(Date.UTC(toPKTdate.getUTCFullYear(), toPKTdate.getUTCMonth()-1, 1) - PKT_OFFSET_MS);
+  const cfEnd    = new Date(mtdStart.getTime() - 1);
+
+  try {
+    // Show loading state
+    ['xs-dispatched','xs-delivered','xs-cancel-mtd','xs-cancel-cf','xs-return-mtd','xs-return-cf'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.textContent='...';el.classList.add('shimmer');}
+    });
+
+    // Fetch all 4 statuses for MTD
+    const [dispatched, delivered, cancelledMTD, returnsMTD] = await Promise.all([
+      xFetchOrders('DISPATCHED',        mtdStart, to),
+      xFetchOrders('ORDER_DELIVERED',   mtdStart, to),
+      xFetchOrders('DEAD_VIA_CUSTOMER', mtdStart, to),
+      xFetchOrders('RETURN_VERIFICATION', mtdStart, to),
+    ]);
+
+    // Fetch CF (carry forward = previous month dispatched orders cancelled/returned this month)
+    const [cancelledCF, returnsCF] = await Promise.all([
+      xFetchOrders('DEAD_VIA_CUSTOMER',    cfStart, cfEnd),
+      xFetchOrders('RETURN_VERIFICATION',  cfStart, cfEnd),
+    ]);
+
+    // Update cards
+    const s = id=>{ const el=document.getElementById(id); if(el) el.classList.remove('shimmer'); return el; };
+    const set = (id,val) => { const el=s(id); if(el) el.textContent=val; };
+
+    // Helper: count total items across orders
+    const countItems = orders => orders.reduce((s,o)=>{
+      const qty = (o.products||[]).filter(p=>p!=null).reduce((ps,p)=>ps+(parseInt(p.quantity)||0),0);
+      return s+qty;
+    },0);
+
+    const countPKR = orders => orders.reduce((s,o)=>s+(parseFloat(o.total_amount_pkr)||0),0);
+
+    const setCard = (id, orders) => {
+      const el = s(id);
+      if(!el) return;
+      const orders_count = orders.length;
+      const items_count  = countItems(orders);
+      const pkr_total    = countPKR(orders);
+      el.innerHTML = `<div style="font-size:20px;font-weight:700;font-family:var(--mono)">PKR ${fmt(Math.round(pkr_total))}</div>`
+        + `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px">${items_count.toLocaleString()} items &nbsp;·&nbsp; ${orders_count.toLocaleString()} orders</div>`;
+    };
+
+    setCard('xs-dispatched',  dispatched);
+    setCard('xs-delivered',   delivered);
+    setCard('xs-cancel-mtd',  cancelledMTD);
+    setCard('xs-cancel-cf',   cancelledCF);
+    setCard('xs-return-mtd',  returnsMTD);
+    setCard('xs-return-cf',   returnsCF);
+    // Mirror to CS tab cards
+    setCard('cs-xs-dispatched',  dispatched);
+    setCard('cs-xs-delivered',   delivered);
+    setCard('cs-xs-cancel-mtd',  cancelledMTD);
+    setCard('cs-xs-cancel-cf',   cancelledCF);
+    setCard('cs-xs-return-mtd',  returnsMTD);
+    setCard('cs-xs-return-cf',   returnsCF);
+
+    // Cancellation reasons from MTD cancelled orders
+    const reasonMap = {};
+    cancelledMTD.forEach(o=>{
+      const reason = xGetCancelReason(o) || 'Not specified';
+      reasonMap[reason] = (reasonMap[reason]||0)+1;
+    });
+    renderXstackCancelReasons(reasonMap, cancelledMTD.length);
+
+  } catch(err) {
+    console.error('Xstack error:', err);
+    const errMsg = err.message || String(err);
+    ['xs-dispatched','xs-delivered','xs-cancel-mtd','xs-cancel-cf','xs-return-mtd','xs-return-cf',
+     'cs-xs-dispatched','cs-xs-delivered','cs-xs-cancel-mtd','cs-xs-cancel-cf','cs-xs-return-mtd','cs-xs-return-cf'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){
+        el.innerHTML='<div style="font-size:11px;color:var(--red);font-family:var(--mono)">ERR: '+errMsg+'</div>';
+        el.classList.remove('shimmer');
+      }
+    });
+  }
+}
+
+function renderXstackCancelReasons(reasonMap, total){
+  const el = document.getElementById('xs-cancel-reasons');
+  if(!el) return;
+  const entries = Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){ el.innerHTML='<div style="color:var(--muted);font-size:12px">No cancellations in this period</div>'; return; }
+  el.innerHTML = entries.map(([reason,count])=>{
+    const pct = total>0?Math.round(count/total*100):0;
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span style="color:var(--text)">${reason}</span>
+        <span style="font-family:var(--mono);color:var(--accent)">${count} <span style="color:var(--muted)">(${pct}%)</span></span>
+      </div>
+      <div style="background:var(--surface2);border-radius:3px;height:4px">
+        <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
 // ── IMAGE HANDLING — Search & Drop System ──
 // _upImgMatched: productId → {productId, title, sku, images:[{file,pos}]}
 
@@ -6074,6 +6499,9 @@ function gtechinvPopulateSelect(){ /* no-op — no dropdown needed */ }
     <!-- Summary Row -->
     <div id="cardSummaryRow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px"></div>
 
+    <!-- Client Summary -->
+    <div id="cardClientSummary" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px"></div>
+
     <!-- Transaction Table -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -6139,11 +6567,22 @@ async function loadCardData(force=false){
 
 function parseCardCSV(text){
   const lines = text.trim().split('\n');
-  // First row is headers
-  const headers = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  // Proper CSV split that handles quoted fields containing commas
+  function splitCSVLine(line){
+    const result=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){inQ=!inQ;}
+      else if(ch===','&&!inQ){result.push(cur.trim().replace(/^"|"$/g,''));cur='';}
+      else{cur+=ch;}
+    }
+    result.push(cur.trim().replace(/^"|"$/g,''));
+    return result;
+  }
+  const headers = splitCSVLine(lines[0]).map(h=>h.toLowerCase());
   const rows = [];
   for(let i=1;i<lines.length;i++){
-    const cols = lines[i].split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+    const cols = splitCSVLine(lines[i]);
     if(cols.every(c=>!c)) continue;
     rows.push({
       date:       cols[0]||'',
@@ -6153,9 +6592,9 @@ function parseCardCSV(text){
       dr:         parseFloat((cols[4]||'').replace(/[^0-9.-]/g,''))||0,
       cr:         parseFloat((cols[5]||'').replace(/[^0-9.-]/g,''))||0,
       balance:    parseFloat((cols[6]||'').replace(/[^0-9.-]/g,''))||0,
-      pkrReceived:parseFloat((cols[7]||'').replace(/[^0-9.-]/g,''))||0,
-      afterComm:  parseFloat((cols[8]||'').replace(/[^0-9.-]/g,''))||0,
-      dollarRate: parseFloat((cols[9]||'').replace(/[^0-9.-]/g,''))||0,
+      pkrReceived:parseFloat((cols[7]||'').replace(/,/g,'').replace(/[^0-9.-]/g,''))||0,
+      afterComm:  parseFloat((cols[8]||'').replace(/,/g,'').replace(/[^0-9.-]/g,''))||0,
+      dollarRate: parseFloat((cols[9]||'').replace(/,/g,'').replace(/[^0-9.-]/g,''))||0,
     });
   }
   return rows;
@@ -6225,11 +6664,98 @@ function renderCardTab(){
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#f59e0b"></div>
-      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Avg $ Rate</div>
-      <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:#f59e0b">${(()=>{const r=rows.filter(x=>x.dollarRate>0);return r.length?'PKR '+(r.reduce((s,x)=>s+x.dollarRate,0)/r.length).toFixed(2):'—';})()}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px">Latest: PKR ${(rows.filter(r=>r.dollarRate>0).slice(-1)[0]||{dollarRate:0}).dollarRate||'—'}</div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">$ Rate (Latest)</div>
+      <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:#f59e0b">${(()=>{const r=rows.filter(x=>x.dollarRate>0);return r.length?'PKR '+r[r.length-1].dollarRate.toFixed(2):'—';})()}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">${(()=>{const r=rows.filter(x=>x.dollarRate>0);return r.length?r[r.length-1].date:'No rate entries';})()}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:20px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--red)"></div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">MTD Spend</div>
+      <div style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--red)">$${fmt(totalDr)}</div>
+      <div style="font-size:11px;font-family:var(--mono);color:#10b981;margin-top:6px">${(()=>{const r=rows.filter(x=>x.dollarRate>0);const rate=r.length?r[r.length-1].dollarRate:0;return rate>0?'PKR '+fmt(Math.round(totalDr*rate)):'—';})()}</div>
     </div>
   `;
+
+  // ── Platform Summary ──
+  // Get latest dollar rate from rows
+  const latestRate = (()=>{ const r=rows.filter(x=>x.dollarRate>0); return r.length?r[r.length-1].dollarRate:0; })();
+
+  // Group debit transactions by platform name
+  const platformMap = {};
+  rows.forEach(r=>{
+    if(r.dr<=0) return;
+    const raw = r.desc.trim()||'Other';
+    // Normalise platform name from description
+    let platform = raw;
+    const u = raw.toUpperCase();
+    if(u.includes('FACEBK')||u.includes('FACEBOOK')) platform='Facebook';
+    else if(u.includes('GOOGLE')) platform='Google';
+    else if(u.includes('SNAP')) platform='Snapchat';
+    else if(u.includes('ANTHROPIC')) platform='Claude (Anthropic)';
+    else if(u.includes('WEARVIEW')) platform='Wearview';
+    else if(u.includes('SHOPIFY')) platform='Shopify';
+    else if(u.includes('FASH STUDIO')) platform='Fash Studio';
+    else if(u.includes('TIKTOK')) platform='TikTok';
+    else platform = raw.replace(/Card charge \(/i,'').replace(/\)$/,'').trim();
+
+    if(!platformMap[platform]) platformMap[platform]={debit:0, count:0};
+    platformMap[platform].debit += r.dr;
+    platformMap[platform].count++;
+  });
+
+  const platformEntries = Object.entries(platformMap)
+    .filter(([,v])=>v.debit>0)
+    .sort((a,b)=>b[1].debit-a[1].debit);
+
+  const totalPlatformDebit = platformEntries.reduce((s,[,v])=>s+v.debit,0);
+  const totalPlatformPKR   = latestRate>0 ? totalPlatformDebit*latestRate : 0;
+  const totalPkrReceived   = rows.reduce((s,r)=>s+r.pkrReceived,0);
+  const commission6pct     = totalPkrReceived*0.06;
+
+  const summaryEl = document.getElementById('cardClientSummary');
+  if(summaryEl){
+    if(!platformEntries.length){
+      summaryEl.style.display='none';
+    } else {
+      summaryEl.style.display='block';
+      summaryEl.innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Platform Spend Summary</div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--muted)">$ rate: ${latestRate>0?latestRate.toFixed(2):'—'}</div>
+        </div>
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Platform</th>
+              <th style="padding:10px 14px;text-align:center;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Txns</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em">Debit ($)</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:.06em">PKR (× rate)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${platformEntries.map(([name,v],i)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${i%2===0?'transparent':'var(--surface2)'}">
+              <td style="padding:10px 14px;font-weight:600;color:var(--text)">${name}</td>
+              <td style="padding:10px 14px;text-align:center;font-family:var(--mono);color:var(--muted)">${v.count}</td>
+              <td style="padding:10px 14px;text-align:right;font-family:var(--mono);color:var(--red);font-weight:600">$${fmt(v.debit)}</td>
+              <td style="padding:10px 14px;text-align:right;font-family:var(--mono);color:#10b981;font-weight:600">${latestRate>0?'PKR '+fmt(Math.round(v.debit*latestRate)):'—'}</td>
+            </tr>`).join('')}
+            <tr style="background:var(--surface2);border-top:2px solid var(--border2)">
+              <td style="padding:10px 14px;font-weight:700;color:var(--accent)">Total</td>
+              <td style="padding:10px 14px;text-align:center;font-family:var(--mono);font-weight:700;color:var(--accent)">${platformEntries.reduce((s,[,v])=>s+v.count,0)}</td>
+              <td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--red)">$${fmt(totalPlatformDebit)}</td>
+              <td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-weight:700;color:#10b981">${latestRate>0?'PKR '+fmt(Math.round(totalPlatformPKR)):'—'}</td>
+            </tr>
+            <tr style="background:var(--surface2)">
+              <td colspan="3" style="padding:10px 14px;font-weight:600;color:#f59e0b">Commission (6%)</td>
+              <td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-weight:700;color:#f59e0b">${totalPkrReceived>0?'PKR '+fmt(Math.round(commission6pct)):'—'}</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>`;
+    }
+  }
 
   renderCardTable(rows);
 }

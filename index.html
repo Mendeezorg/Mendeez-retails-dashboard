@@ -1852,7 +1852,11 @@ function renderAds(){
     const _netSales=_grossSales-_disc-(window._shopifyReturnValue||0);
     const _grossPct=_grossT>0?Math.min(Math.round(_grossSales/_grossT*100),999):0;
     const _netPct=_netT>0?Math.min(Math.round(_netSales/_netT*100),999):0;
-    const _spendPct=_grossSales>0?Math.round(totS/_grossSales*100):0;
+    // Spend % only meaningful when sheet and Shopify cover same period
+    // Check if sheet has data for selected range (rows > 0 means sheet matched the range)
+    const _hasSheetData = rows.length > 0;
+    const _spendPct=_grossSales>0?Math.min(Math.round(totS/_grossSales*100),999):0;
+    const _spendPctShow = (_hasSheetData && _grossSales>0) ? _spendPct+'%' : '—';
     const _pctCol=p=>p>=80?'var(--green)':p>=50?'var(--accent)':'var(--red)';
     html+=`<div class="pc" style="border-color:var(--accent-dim)">
       <div class="pn"><div class="pi ix">Σ</div>Combined</div>
@@ -1871,7 +1875,7 @@ function renderAds(){
         <div><div class="kl">Gross Achieved</div><div class="kv" style="color:${_pctCol(_grossPct)}">${_grossT>0?_grossPct+'%':'—'}</div></div>
         <div><div class="kl">Net Achieved</div><div class="kv" style="color:${_pctCol(_netPct)}">${_netT>0?_netPct+'%':'—'}</div></div>
       </div>
-      <div style="margin-top:8px"><div class="kl">Spend % of Gross</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${_pctCol(100-_spendPct)};margin-top:2px">${_grossSales>0?_spendPct+'%':'—'}</div></div>
+      <div style="margin-top:8px"><div class="kl">Spend % of Gross</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${_pctCol(100-_spendPct)};margin-top:2px">${_spendPctShow}</div></div>
     </div>`;
   }
   document.getElementById('platCards').innerHTML=html;
@@ -3267,6 +3271,7 @@ function switchTab(name,el){
   if(name==='ads'){ loadAdsTargets(); }
   if(name==='cards') loadCardData();
   if(name==='gtech'){ gtechinvPopulateSelect(); if(Object.keys(_gtechStockData).length===0) gtechLoadAll(); }
+  if(name==='gtechinv'){ gtechinvInit(); }
   if(name==='sorter'){
     const sel=document.getElementById('sortCat');
     if(sel&&allCollections.length>0&&sel.options.length<=1)
@@ -4349,13 +4354,16 @@ window._adsTargets = {gross:0, net:0};
 let _targetEditing = 'gross';
 
 function adsTargetMonthKey(){
-  // Use the selected date range's month, not today's month
+  // Use the selected date range's month in PKT (not UTC)
   const {from} = getRange();
   const d = from || new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  // Adjust to PKT (+5h) so June 1 00:00 PKT stays in June
+  const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
+  return pkt.getUTCFullYear()+'-'+String(pkt.getUTCMonth()+1).padStart(2,'0');
 }
 
 async function loadAdsTargets(){
+  if(typeof DB === 'undefined') return; // Supabase not loaded yet
   const key = adsTargetMonthKey();
   const rows = await DB.get('ads_targets', `month=eq.${key}`);
   if(rows && rows.length){
@@ -4367,9 +4375,11 @@ async function loadAdsTargets(){
 }
 
 async function saveTarget(){
+  if(typeof DB === 'undefined'){ alert('Supabase not connected'); return; }
   const val = parseFloat(document.getElementById('targetModalInput').value)||0;
   if(!val){ alert('Please enter a valid amount'); return; }
-  const key = adsTargetMonthKey();
+  // Use the month key stored when modal was opened — not current date range
+  const key = window._targetEditingMonthKey || adsTargetMonthKey();
   window._adsTargets[_targetEditing] = val;
   // Upsert to Supabase
   await DB.upsert('ads_targets', {
@@ -4388,10 +4398,11 @@ async function saveTarget(){
 function openTargetModal(type){
   _targetEditing = type;
   const isGross = type==='gross';
-  const n=new Date();
-  document.getElementById('targetModalTitle').textContent = isGross?'Set Gross Target':type==='net'?'Set Net Target':'Set Ad Spend Budget';
   const {from:_mFrom}=getRange();
   const _mDate=_mFrom||new Date();
+  // Lock month key at open time — not at save time
+  window._targetEditingMonthKey = _mDate.getFullYear()+'-'+String(_mDate.getMonth()+1).padStart(2,'0');
+  document.getElementById('targetModalTitle').textContent = isGross?'Set Gross Target':type==='net'?'Set Net Target':'Set Ad Spend Budget';
   document.getElementById('targetModalMonth').textContent = _mDate.toLocaleString('en-GB',{month:'long',year:'numeric'});
   document.getElementById('targetModalInput').value = window._adsTargets[type]||'';
   document.getElementById('targetModalInput').placeholder = type==='spend'?'e.g. 1500000':'e.g. 5000000';
@@ -4417,9 +4428,9 @@ function renderAdsTargetCards(){
 
   // Gross card
   const gv=document.getElementById('grossTargetVal');
-  if(gv) gv.textContent = grossT>0?'PKR '+fmt(grossT):'Not set';
+  if(gv) gv.textContent = grossT>0?'PKR '+fmt(grossT):'—';
   const ga=document.getElementById('grossAchievedLbl');
-  if(ga) ga.textContent = 'Achieved: '+(grossSales>0?'PKR '+fmt(grossSales):'—');
+  if(ga) ga.textContent = grossT>0?'Achieved: '+(grossSales>0?'PKR '+fmt(grossSales):'—'):'—';
   const gp=document.getElementById('grossAchievedPct');
   if(gp){ gp.textContent=grossT>0?grossPct+'%':'—'; gp.style.color=grossT>0?pctColor(grossPct):'var(--muted)'; }
   const gb=document.getElementById('grossProgressBar');
@@ -4427,24 +4438,23 @@ function renderAdsTargetCards(){
 
   // Net card
   const nv=document.getElementById('netTargetVal');
-  if(nv) nv.textContent = netT>0?'PKR '+fmt(netT):'Not set';
+  if(nv) nv.textContent = netT>0?'PKR '+fmt(netT):'—';
   const na=document.getElementById('netAchievedLbl');
-  if(na) na.textContent = 'Achieved: '+(netSales>0?'PKR '+fmt(netSales):'—');
+  if(na) na.textContent = netT>0?'Achieved: '+(netSales>0?'PKR '+fmt(netSales):'—'):'—';
   const np=document.getElementById('netAchievedPct');
   if(np){ np.textContent=netT>0?netPct+'%':'—'; np.style.color=netT>0?pctColor(netPct):'var(--muted)'; }
   const nb=document.getElementById('netProgressBar');
   if(nb){ nb.style.width=netT>0?barW(netPct):'0%'; nb.style.background=pctColor(netPct); }
 
-  // Spend card — get actual spend from ads data
+  // Spend card
   const spendT = gt.spend||0;
   const actualSpend = (window._adsTot||{}).spend||0;
   const spendPct = spendT>0?Math.min(Math.round(actualSpend/spendT*100),999):0;
-  // For spend: lower % is better (green=low, red=high)
   const spendColor = p => p>=90?'var(--red)':p>=70?'var(--accent)':'var(--green)';
   const sv=document.getElementById('spendTargetVal');
-  if(sv) sv.textContent = spendT>0?'PKR '+fmt(spendT):'Not set';
+  if(sv) sv.textContent = spendT>0?'PKR '+fmt(spendT):'—';
   const sul=document.getElementById('spendUsedLbl');
-  if(sul) sul.textContent = 'Spent: '+(actualSpend>0?'PKR '+fmt(actualSpend):'—');
+  if(sul) sul.textContent = spendT>0?'Spent: '+(actualSpend>0?'PKR '+fmt(actualSpend):'—'):'—';
   const sp=document.getElementById('spendUsedPct');
   if(sp){ sp.textContent=spendT>0?spendPct+'%':'—'; sp.style.color=spendT>0?spendColor(spendPct):'var(--muted)'; }
   const spb=document.getElementById('spendProgressBar');
@@ -4455,8 +4465,8 @@ function renderAdsTargetCards(){
 // ══════════════════════════════════════════════════
 // XSTACK INTEGRATION
 // ══════════════════════════════════════════════════
-const XSTACK_WORKER    = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
-const XSTACK_AUTH_URL  = XSTACK_WORKER + '/xstack-token';
+const XSTACK_WORKER     = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
+const XSTACK_AUTH_URL   = XSTACK_WORKER + '/xstack-token';
 const XSTACK_ORDERS_URL = XSTACK_WORKER + '/xstack-orders';
 const XSTACK_CLIENT_ID  = 'api-user-peiUUaIuwe';
 const XSTACK_SECRET     = 'PhiVyUF0HG7bLzUeOATb';
@@ -4505,8 +4515,7 @@ async function xFetchOrders(status, startDate, endDate){
       + '&location_id='+XSTACK_LOCATION
       + '&start_date='+fmtD(startDate)
       + '&end_date='+fmtEnd(endDate)
-      + '&size=500&page='+page
-      + '&token='+encodeURIComponent(token);
+      + '&size=500&page='+page+'&token='+encodeURIComponent(token);
     const res = await fetch(url);
     if(!res.ok) throw new Error('Xstack '+status+': '+res.status);
     const data = await res.json();
@@ -4558,7 +4567,7 @@ async function xDebugTest(){
       return `${y}-${m}-${dd}T23:59:59%2B05:00`;
     };
 
-    const statuses = ['ORDER_DISPATCHED','DISPATCHED','ORDER_DELIVERED','DEAD_VIA_CUSTOMER','RETURN_VERIFICATION'];
+    const statuses = ['ORDER_DISPATCHED','DISPATCHED','AWAITING_SM_APPROVAL','BOOKED','SHIPPED','OUT_FOR_DELIVERY','ORDER_DELIVERED','DEAD_VIA_CUSTOMER','RETURN_VERIFICATION','CANCELLED','RTO'];
     for(const st of statuses){
       const url = XSTACK_ORDERS_URL
         + '?order_status='+encodeURIComponent(st)
@@ -4628,7 +4637,13 @@ async function loadXstackData(){
     },0);
 
     const countPKR = orders => orders.reduce((s,o)=>{
-      const amt = parseFloat(o.total_amount_pkr) || parseFloat(o.total_amount) || parseFloat(o.cod_amount) || parseFloat(o.grand_total) || parseFloat(o.amount_pkr) || 0;
+      // Try direct fields first
+      let amt = parseFloat(o.total_amount_pkr) || parseFloat(o.total_amount) || parseFloat(o.cod_amount) || parseFloat(o.grand_total) || parseFloat(o.amount_pkr) || 0;
+      // Fallback: check orders_brand_details for parent_total_amount
+      if(!amt && Array.isArray(o.orders_brand_details)){
+        const field = o.orders_brand_details.find(d => d.attribute === 'parent_total_amount');
+        if(field) amt = parseFloat(field.value) || 0;
+      }
       return s + amt;
     }, 0);
 
@@ -6676,8 +6691,8 @@ function renderCardTab(){
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)"></div>
       <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Total Transactions</div>
-      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--blue)">${rows.length}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px">${from||'All time'}</div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--blue)">${rows.filter(r=>r.dr>0).length}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">${rows.filter(r=>r.dr>0).length} debits &nbsp;·&nbsp; ${rows.filter(r=>r.cr>0).length} credits</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#10b981"></div>

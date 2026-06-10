@@ -265,6 +265,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <a href="/tasks/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#e8c547;border:none;border-radius:6px;color:#0d0d0d;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">✅ Task Manager</a>
     <button onclick="doEcomLogout()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:transparent;border:1px solid #444;border-radius:6px;color:#999;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">⇄ Logout</button>
     <button onclick="openSetup()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:transparent;border:1px solid #555;border-radius:6px;color:#aaa;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">⚙ Settings</button>
+    <button onclick="openDebugPanel()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:transparent;border:1px solid #333;border-radius:6px;color:#666;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'Syne',sans-serif">🔍 Debug</button>
     
     <button class="btn btn-s btn-sm" onclick="refreshAll()">↻ Refresh</button>
   </div>
@@ -355,7 +356,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block"></span>
       OMS — Xstack Live Data
     </div>
-    <button onclick="xDebugTest()" style="font-size:10px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border2);color:var(--accent);border-radius:4px;cursor:pointer;font-family:var(--mono)">🔍 Debug June</button>
+
   </div>
   <div id="xs-debug-output" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-bottom:10px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
   <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
@@ -630,7 +631,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:end">
     <div>
       <div class="fl" style="margin-bottom:6px">Auto-Sort Rule</div>
-      <select class="fi" id="sortRule">
+      <select class="fi" id="sortRule" onchange="sortRuleChanged()">
         <option value="avail_desc">All sizes available first</option>
         <option value="stock_desc">Highest total stock first</option>
         <option value="stock_asc">Lowest stock first (clearance)</option>
@@ -639,8 +640,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <option value="price_asc">Lowest price first</option>
         <option value="date_desc">New to Old (latest uploaded first)</option>
         <option value="date_asc">Old to New (oldest uploaded first)</option>
+        <option value="limit_products">Number of Products to Show</option>
       </select>
       <button class="btn btn-p btn-sm" style="margin-top:8px;width:100%" onclick="runSort()">▶ Auto-Sort</button>
+      <!-- Limit Products fields — shown only when limit_products selected -->
+      <div id="limitProductsFields" style="display:none;margin-top:10px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <div>
+            <div class="fl" style="margin-bottom:4px">Show how many</div>
+            <input class="fi" type="number" id="limitCount" placeholder="e.g. 100" min="1">
+          </div>
+          <div>
+            <div class="fl" style="margin-bottom:4px">Which ones</div>
+            <select class="fi" id="limitOrder">
+              <option value="most_recent">Most Recent</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--mono)">Remaining products will be removed from collection + tag removed</div>
+      </div>
     </div>
     <div>
       <div class="fl" style="margin-bottom:6px">Collection</div>
@@ -691,7 +710,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="fg" style="margin:0">
             <div class="fl">Category / Type <span style="color:var(--red)">*</span></div>
-            <select class="fi" id="pf-type">
+            <select class="fi" id="pf-type" onchange="upFormToggleMode()">
               <option value="">Select category...</option>
               <option value="T-shirts">T-shirts</option>
               <option value="Polo">Polo</option>
@@ -719,24 +738,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <option value="Belts">Belts</option>
               <option value="Bags">Bags</option>
               <option value="Jewelry">Jewelry</option>
+              <option value="Rings">Rings</option>
+              <option value="Bracelets">Bracelets</option>
+              <option value="Necklaces">Necklaces</option>
               <option value="Shoes">Shoes</option>
               <option value="Slides">Slides</option>
+              <option value="Perfume">Perfume</option>
               <option value="Tanktops">Tanktops</option>
               <option value="Sweaters">Sweaters</option>
               <option value="Tie & Dye">Tie & Dye</option>
               <option value="Blazers">Blazers</option>
             </select>
           </div>
-          <div class="fg" style="margin:0">
-            <div class="fl">Product Mode <span style="color:var(--red)">*</span></div>
-            <select class="fi" id="pf-mode" onchange="upFormToggleMode()">
-              <option value="sizes">Sizes (with variants)</option>
-              <option value="qty">Quantity (single variant)</option>
-            </select>
-          </div>
+
         </div>
 
-        <!-- Sizes mode -->
+        <!-- Clothing Sizes mode -->
         <div id="pf-sizes-row" class="fg" style="margin:0">
           <div class="fl">Sizes</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -750,10 +767,43 @@ tr:hover td{background:rgba(255,255,255,.02)}
           </div>
         </div>
 
+        <!-- Ring size mode -->
+        <div id="pf-ring-row" class="fg" style="margin:0;display:none">
+          <div class="fl">Starting Size (mm) <span style="color:var(--muted2);font-size:9px">— will auto-generate 4 more sizes</span></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input class="fi" id="pf-ring-start" type="number" min="10" max="30" placeholder="e.g. 17" style="width:120px" oninput="upFormPreviewSKUs()">
+            <div id="pf-ring-preview" style="font-size:11px;color:var(--accent);font-family:var(--mono)"></div>
+          </div>
+        </div>
+
+        <!-- Shoe size mode -->
+        <div id="pf-shoe-row" class="fg" style="margin:0;display:none">
+          <div class="fl">Starting Size <span style="color:var(--muted2);font-size:9px">— will auto-generate 4 more sizes</span></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input class="fi" id="pf-shoe-start" type="number" min="30" max="50" placeholder="e.g. 38" style="width:120px" oninput="upFormPreviewSKUs()">
+            <div id="pf-shoe-preview" style="font-size:11px;color:var(--accent);font-family:var(--mono)"></div>
+          </div>
+        </div>
+
         <!-- Qty mode -->
         <div id="pf-qty-row" class="fg" style="margin:0;display:none">
           <div class="fl">Quantity</div>
           <input class="fi" id="pf-qty" type="number" min="0" placeholder="e.g. 50">
+        </div>
+
+        <!-- Collection Type -->
+        <div class="fg">
+          <div class="fl">Collection Type</div>
+          <div style="display:flex;gap:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;flex:1;justify-content:center" id="ct-new-label">
+              <input type="radio" name="collectionType" id="ct-new" value="new" checked onchange="upCollectionTypeChange()">
+              <span style="font-size:12px;font-weight:600;color:var(--accent)">🆕 New In</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;flex:1;justify-content:center" id="ct-fo-label">
+              <input type="radio" name="collectionType" id="ct-fo" value="fo" onchange="upCollectionTypeChange()">
+              <span style="font-size:12px;font-weight:600;color:var(--muted)">🏭 Factory Outlet</span>
+            </label>
+          </div>
         </div>
 
         <!-- SKU + Price row -->
@@ -857,6 +907,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <button class="btn btn-s btn-sm" onclick="upReset()">✕ Clear All</button>
         <button class="btn btn-p" id="upSubmitBtn" onclick="upSubmit()" disabled style="opacity:.4;padding:10px 24px">↑ Submit to Shopify</button>
       </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;margin-top:8px">
+        <input type="checkbox" id="autoLimitNewIn" checked>
+        Auto-limit New In to 100 after upload
+      </label>
     </div>
 
     <!-- Progress -->
@@ -1239,6 +1293,11 @@ const _sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function shopFetch(ep,method,body){
   const WORKER_URL='https://mendeez-shopify.divine-mouse-0258.workers.dev';
   const workerUrl=WORKER_URL+'?store='+encodeURIComponent(STORE)+'&token='+encodeURIComponent(TOKEN)+'&ep='+encodeURIComponent(ep);
+  if(method==='DELETE'){
+    const r=await fetch(workerUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shopifyMethod:'DELETE',shopifyBody:null})});
+    if(!r.ok){const t=await r.text();throw new Error('Shopify '+r.status+': '+t.slice(0,80));}
+    return {};
+  }
   if(body&&(method==='POST'||method==='PUT')){
     const r=await fetch(workerUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shopifyMethod:method,shopifyBody:body})});
     if(!r.ok){const t=await r.text();throw new Error('Shopify '+r.status+': '+t.slice(0,80));}
@@ -1462,7 +1521,7 @@ async function loadProducts(){
     // No hard page cap — load ALL products regardless of catalog size
     // 250 per page × unlimited pages = full catalog always loaded
     while(hasMore){
-      const base=`/products.json?limit=250&order=id+asc&fields=id,title,product_type,status,variants,images,tags,created_at,published_at`;
+      const base=`/products.json?limit=250&order=id+asc&fields=id,title,product_type,status,variants,images,tags,created_at,published_at,handle`;
       const url=sinceId?`${base}&since_id=${sinceId}`:base;
       try{
         const d=await shopFetch(url);
@@ -1825,6 +1884,7 @@ function renderAds(){
   const totS=plats.reduce((a,p)=>a+p.s,0),totR=plats.reduce((a,p)=>a+p.rv,0),totO=plats.reduce((a,p)=>a+p.o,0);
   const totRoas=totS>0?totR/totS:0;
   window._adsTot={spend:totS,rev:totR,orders:totO,roas:totRoas};
+  if(typeof renderAdsTargetCards==='function') renderAdsTargetCards();
 
   // Platform cards
   let html=plats.map(p=>{
@@ -3803,9 +3863,62 @@ function sorterDragEnd(e){
   _dragSrcIdx=null;
 }
 
+function upCollectionTypeChange(){
+  const isNew = document.getElementById('ct-new').checked;
+  const newLabel = document.getElementById('ct-new-label');
+  const foLabel  = document.getElementById('ct-fo-label');
+  if(newLabel) newLabel.style.borderColor = isNew ? 'var(--accent)' : 'var(--border)';
+  if(foLabel)  foLabel.style.borderColor  = !isNew ? '#f59e0b' : 'var(--border)';
+  const newSpan = newLabel?.querySelector('span');
+  const foSpan  = foLabel?.querySelector('span');
+  if(newSpan) newSpan.style.color = isNew ? 'var(--accent)' : 'var(--muted)';
+  if(foSpan)  foSpan.style.color  = !isNew ? '#f59e0b' : 'var(--muted)';
+  // Auto-limit only relevant for New In
+  const autoLimit = document.getElementById('autoLimitNewIn');
+  const autoLimitLabel = autoLimit?.parentElement;
+  if(autoLimit){
+    autoLimit.disabled = !isNew;
+    if(autoLimitLabel) autoLimitLabel.style.opacity = isNew ? '1' : '0.4';
+  }
+}
+
+function sortRuleChanged(){
+  const rule = document.getElementById('sortRule').value;
+  const fields = document.getElementById('limitProductsFields');
+  fields.style.display = rule === 'limit_products' ? 'block' : 'none';
+}
+
 function runSort(){
   if(!_sorterProds.length){document.getElementById('sortSts').textContent='Select a collection first';return;}
   const rule=document.getElementById('sortRule').value;
+
+  // ── Limit Products ──
+  if(rule==='limit_products'){
+    const count=parseInt(document.getElementById('limitCount').value)||0;
+    const order=document.getElementById('limitOrder').value;
+    if(!count){alert('Please enter how many products to show');return;}
+    if(!document.getElementById('sortCat').value){alert('Please select a collection first');return;}
+
+    let sorted=[..._sorterProds];
+    sorted.sort((a,b)=>{
+      const da=new Date(a.created_at||0),db=new Date(b.created_at||0);
+      return order==='most_recent'?db-da:da-db;
+    });
+
+    const toKeep=sorted.slice(0,count);
+    const toRemove=sorted.slice(count);
+
+    if(!toRemove.length){
+      alert('Collection has '+_sorterProds.length+' products — already within limit of '+count);
+      return;
+    }
+
+    const confirmMsg='This will keep '+toKeep.length+' products and remove '+toRemove.length+' products from collection and their collection tag. Continue?';
+    const confirmed=confirm(confirmMsg);
+    if(!confirmed)return;
+    applyLimitProducts(toKeep,toRemove);
+    return;
+  }
   const gT=p=>(p.variants||[]).reduce((s,v)=>s+Math.max(0,v.inventory_quantity||0),0);
   const gA=p=>(p.variants||[]).filter(v=>(v.inventory_quantity||0)>0).length;
 
@@ -3844,6 +3957,64 @@ function runSort(){
   const lockedCount=_lockedIds.size;
   document.getElementById('sortSts').textContent='✓ Sorted'+(lockedCount>0?' ('+lockedCount+' pinned products kept in place)':'')+' — drag to fine-tune, then Apply to Shopify';
 }
+async function applyLimitProducts(toKeep, toRemove){
+  const collectionId = document.getElementById('sortCat').value;
+  const logEl = document.getElementById('sortSts');
+  const countEl = document.getElementById('sortCount');
+
+  logEl.textContent = 'Applying limit — removing '+toRemove.length+' products...';
+
+  let done = 0;
+  let failed = 0;
+
+  // Get collection rules to find which tag qualifies products
+  // For smart collections: remove the qualifying tag from products
+  // First check if it's a smart collection
+  let qualifyingTag = null;
+  try {
+    const colInfo = await shopFetch(`/smart_collections/${collectionId}.json`);
+    if(colInfo && colInfo.smart_collection){
+      // Find tag rule
+      const tagRule = (colInfo.smart_collection.rules||[]).find(r=>r.column==='tag' && r.relation==='equals');
+      if(tagRule) qualifyingTag = tagRule.condition;
+    }
+  } catch(e){ /* manual collection — use collects API */ }
+
+  // Remove products in batches of 5 for speed
+  const BATCH = 5;
+  for(let i=0; i<toRemove.length; i+=BATCH){
+    const batch = toRemove.slice(i, i+BATCH);
+    await Promise.all(batch.map(async p=>{
+      try{
+        // Remove from collection via collects API
+        const collectsResp = await shopFetch(`/collects.json?product_id=${p.id}&collection_id=${collectionId}`);
+        if(collectsResp?.collects?.length){
+          await Promise.all(collectsResp.collects.map(c=>
+            shopFetch(`/collects/${c.id}.json`,'DELETE')
+          ));
+        }
+        done++;
+      } catch(e){
+        failed++;
+        console.warn('Failed:', p.id, e.message);
+      }
+    }));
+    logEl.textContent = 'Removing products... '+done+'/'+toRemove.length;
+    await new Promise(r=>setTimeout(r,300)); // small delay to avoid rate limit
+  }
+
+  // Step 3: Set sort order for kept products
+  _sorterProds = toKeep;
+  renderSorterGrid();
+
+  const msg = `✅ Done! Kept ${toKeep.length} products · Removed ${done} · Failed ${failed}`;
+  logEl.textContent = msg;
+  countEl.textContent = toKeep.length + ' products remaining';
+
+  // Show apply button to finalize sort order
+  document.getElementById('applyToShopifyBtn').style.display = 'block';
+}
+
 async function applyCollectionSort(){
   const cat=document.getElementById('sortCat').value;
   if(!cat||!_sorterProds.length)return;
@@ -4137,16 +4308,42 @@ function upClearCSV(){
 // PRODUCT FORM — Direct entry system
 // ══════════════════════════════════════════════════
 
+
+// Category → variant mode mapping
+const CATEGORY_MODE = {
+  // Clothing → S/M/L sizes
+  'T-shirts':'sizes','Polo':'sizes','Hoodies':'sizes','Sweatshirts':'sizes',
+  'Shirts':'sizes','Jackets':'sizes','Cargo Pants':'sizes','Jogger Pants':'sizes',
+  'Shorts':'sizes','Trunks':'sizes','Boxer Trunks':'sizes','Boxer Shorts':'sizes',
+  'Boxer Briefs':'sizes','Boxers':'sizes','Brief':'sizes','Vest':'sizes',
+  'Undershirt':'sizes','Pajama':'sizes','Pajama Sets':'sizes','Socks':'sizes',
+  'Tanktops':'sizes','Sweaters':'sizes','Tie & Dye':'sizes','Blazers':'sizes',
+  // Rings → mm sizes
+  'Jewelry':'ring','Rings':'ring',
+  // Shoes → number sizes
+  'Shoes':'shoe','Slides':'shoe',
+  // Qty only
+  'Caps':'qty','Beanies':'qty','Sunglasses':'qty','Belts':'qty',
+  'Bags':'qty','Perfume':'qty','Fragrances':'qty',
+  'Bracelets':'qty','Necklaces':'qty',
+};
+
 function upFormToggleMode(){
-  const mode = document.getElementById('pf-mode').value;
+  const type = document.getElementById('pf-type').value;
+  const catMode = CATEGORY_MODE[type] || 'sizes';
+  // Auto-set mode based on category
+  const mode = catMode;
   document.getElementById('pf-sizes-row').style.display = mode==='sizes' ? '' : 'none';
+  document.getElementById('pf-ring-row').style.display  = mode==='ring'  ? '' : 'none';
+  document.getElementById('pf-shoe-row').style.display  = mode==='shoe'  ? '' : 'none';
   document.getElementById('pf-qty-row').style.display   = mode==='qty'   ? '' : 'none';
   upFormPreviewSKUs();
 }
 
 function upFormPreviewSKUs(){
   const skuRaw = document.getElementById('pf-sku').value.trim();
-  const mode   = document.getElementById('pf-mode').value;
+  const type   = document.getElementById('pf-type').value;
+  const catMode = CATEGORY_MODE[type] || 'sizes';
   const prev   = document.getElementById('pf-sku-preview');
   if(!skuRaw){ prev.style.display='none'; return; }
 
@@ -4155,7 +4352,30 @@ function upFormPreviewSKUs(){
   const skuPad    = skuRaw.replace(skuPrefix, '').length || 7;
 
   let lines = [];
-  if(mode === 'sizes'){
+
+  if(catMode === 'ring'){
+    const start = parseInt(document.getElementById('pf-ring-start').value) || 0;
+    if(start){
+      const sizes = [start, start+1, start+2, start+3, start+4];
+      sizes.forEach((sz,i)=>{
+        const sku = skuPrefix + String(skuBase+i).padStart(skuPad,'0');
+        lines.push(sz+'mm → '+sku);
+      });
+      const rp = document.getElementById('pf-ring-preview');
+      if(rp) rp.textContent = sizes.map(s=>s+'mm').join(', ');
+    }
+  } else if(catMode === 'shoe'){
+    const start = parseInt(document.getElementById('pf-shoe-start').value) || 0;
+    if(start){
+      const sizes = [start, start+1, start+2, start+3, start+4];
+      sizes.forEach((sz,i)=>{
+        const sku = skuPrefix + String(skuBase+i).padStart(skuPad,'0');
+        lines.push(sz+' → '+sku);
+      });
+      const sp = document.getElementById('pf-shoe-preview');
+      if(sp) sp.textContent = sizes.join(', ');
+    }
+  } else if(catMode === 'sizes'){
     const checked = Array.from(document.querySelectorAll('.pf-size-cb:checked')).map(cb=>cb.value);
     checked.forEach((sz,i)=>{
       const sku = skuPrefix + String(skuBase+i).padStart(skuPad,'0');
@@ -4164,7 +4384,7 @@ function upFormPreviewSKUs(){
   } else {
     lines.push('Default → ' + skuRaw);
   }
-  prev.style.display = 'block';
+  prev.style.display = lines.length ? 'block' : 'none';
   prev.textContent = lines.join('  ·  ');
 }
 
@@ -4216,7 +4436,7 @@ function upFormValidate(){
   const type  = document.getElementById('pf-type').value.trim();
   const sku   = document.getElementById('pf-sku').value.trim();
   const price = document.getElementById('pf-price').value.trim();
-  const mode  = document.getElementById('pf-mode').value;
+  const catMode = CATEGORY_MODE[type] || 'sizes';
   const errEl = document.getElementById('upCsvErrors');
 
   const errs = [];
@@ -4224,9 +4444,15 @@ function upFormValidate(){
   if(!type)  errs.push('Category / Type is required');
   if(!sku)   errs.push('SKU is required');
   if(!price) errs.push('Price is required');
-  if(mode==='sizes'){
+  if(catMode==='sizes'){
     const checked = Array.from(document.querySelectorAll('.pf-size-cb:checked'));
     if(!checked.length) errs.push('Select at least one size');
+  }
+  if(catMode==='ring' && !document.getElementById('pf-ring-start').value){
+    errs.push('Starting ring size (mm) is required');
+  }
+  if(catMode==='shoe' && !document.getElementById('pf-shoe-start').value){
+    errs.push('Starting shoe size is required');
   }
 
   if(errs.length){
@@ -4247,13 +4473,25 @@ function upFormBuildProduct(){
   const design  = document.getElementById('pf-design').value.trim();
   const tags    = document.getElementById('pf-tags').value.trim();
   const descRaw = document.getElementById('pf-desc').value.trim();
-  const mode    = document.getElementById('pf-mode').value;
+  const mode    = 'sizes'; // legacy — mode now driven by category
   const qty     = parseInt(document.getElementById('pf-qty').value)||0;
 
-  const isQty = mode === 'qty';
-  const sizes = isQty
-    ? ['Default Title']
-    : Array.from(document.querySelectorAll('.pf-size-cb:checked')).map(cb=>cb.value);
+  const pType   = document.getElementById('pf-type').value;
+  const catMode = CATEGORY_MODE[pType] || mode;
+  const isQty = catMode === 'qty';
+
+  let sizes;
+  if(catMode === 'ring'){
+    const start = parseInt(document.getElementById('pf-ring-start').value)||17;
+    sizes = [start, start+1, start+2, start+3, start+4].map(s=>s+'mm');
+  } else if(catMode === 'shoe'){
+    const start = parseInt(document.getElementById('pf-shoe-start').value)||38;
+    sizes = [start, start+1, start+2, start+3, start+4].map(s=>String(s));
+  } else if(isQty){
+    sizes = ['Default Title'];
+  } else {
+    sizes = Array.from(document.querySelectorAll('.pf-size-cb:checked')).map(cb=>cb.value);
+  }
 
   const skuPrefix = skuRaw.replace(/\d+$/, '');
   const skuBase   = parseInt(skuRaw.replace(skuPrefix,'')) || 0;
@@ -4340,6 +4578,12 @@ function upFormReset(){
   document.getElementById('pf-qty').value='';
   document.getElementById('pf-sku-preview').style.display='none';
   document.getElementById('upCsvErrors').style.display='none';
+  document.getElementById('pf-ring-start').value='';
+  document.getElementById('pf-shoe-start').value='';
+  const rp=document.getElementById('pf-ring-preview');
+  const sp=document.getElementById('pf-shoe-preview');
+  if(rp) rp.textContent='';
+  if(sp) sp.textContent='';
   // reset sizes to default S,M,L,XL,XXL
   document.querySelectorAll('.pf-size-cb').forEach(cb=>{
     cb.checked = ['S','M','L','XL','XXL'].includes(cb.value);
@@ -4468,10 +4712,10 @@ function renderAdsTargetCards(){
 const XSTACK_WORKER     = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
 const XSTACK_AUTH_URL   = XSTACK_WORKER + '/xstack-token';
 const XSTACK_ORDERS_URL = XSTACK_WORKER + '/xstack-orders';
-const XSTACK_CLIENT_ID  = 'api-user-peiUUaIuwe';
-const XSTACK_SECRET     = 'PhiVyUF0HG7bLzUeOATb';
-const XSTACK_COMPANY    = '226b5c53476dbeaf';
-const XSTACK_LOCATION   = '1139';
+const XSTACK_CLIENT_ID  = 'api-user-vFB6QQAjwX';
+const XSTACK_SECRET     = 'flha1LaPwY-Nuxui2W5Y';
+const XSTACK_COMPANY    = '0b8bd9e671e00824';
+const XSTACK_LOCATION   = '2021';
 
 let _xToken = null;
 let _xTokenExpiry = 0;
@@ -4490,12 +4734,12 @@ async function xGetToken(){
   });
   const data = await res.json();
   _xToken = data.access_token;
-  _xTokenExpiry = Date.now() + ((data.expires_in||300)-30)*1000;
+  _xTokenExpiry = Date.now() + ((data.expires_in||300)-10)*1000;
   return _xToken;
 }
 
-async function xFetchOrders(status, startDate, endDate){
-  const token = await xGetToken();
+async function xFetchOrders(status, startDate, endDate, forcedToken){
+  const token = forcedToken || await xGetToken();
   // Format dates as PKT (+05:00) — use UTC methods since dates are stored as UTC
   const fmtD = d => {
     const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
@@ -4612,18 +4856,21 @@ async function loadXstackData(){
       if(el){el.textContent='...';el.classList.add('shimmer');}
     });
 
+    // Get fresh token once for all requests
+    const freshToken = await xGetToken();
+
     // Fetch all 4 statuses for MTD
     const [dispatched, delivered, cancelledMTD, returnsMTD] = await Promise.all([
-      xFetchOrders('ORDER_DISPATCHED',   mtdStart, to),
-      xFetchOrders('ORDER_DELIVERED',   mtdStart, to),
-      xFetchOrders('DEAD_VIA_CUSTOMER', mtdStart, to),
-      xFetchOrders('RETURN_VERIFICATION', mtdStart, to),
+      xFetchOrders('DISPATCHED',           mtdStart, to, freshToken),
+      xFetchOrders('ORDER_DELIVERED',      mtdStart, to, freshToken),
+      xFetchOrders('DEAD_VIA_CUSTOMER',    mtdStart, to, freshToken),
+      xFetchOrders('RETURN_VERIFICATION',  mtdStart, to, freshToken),
     ]);
 
     // Fetch CF (carry forward = previous month dispatched orders cancelled/returned this month)
     const [cancelledCF, returnsCF] = await Promise.all([
-      xFetchOrders('DEAD_VIA_CUSTOMER',    cfStart, cfEnd),
-      xFetchOrders('RETURN_VERIFICATION',  cfStart, cfEnd),
+      xFetchOrders('DEAD_VIA_CUSTOMER',    cfStart, cfEnd, freshToken),
+      xFetchOrders('RETURN_VERIFICATION',  cfStart, cfEnd, freshToken),
     ]);
 
     // Update cards
@@ -4732,7 +4979,11 @@ function imgSearchProducts(){
 
   const hits = pool.filter(p=>
     p.title.toLowerCase().includes(q) ||
-    (p.variants||[]).some(v=>(v.sku||'').toLowerCase().includes(q))
+    (p.variants||[]).some(v=>
+      (v.sku||'').toLowerCase().includes(q) ||
+      (v.barcode||'').toLowerCase().includes(q)
+    ) ||
+    (p.id||'').toString().includes(q)
   ).slice(0,8);
 
   if(!hits.length){
@@ -5109,6 +5360,28 @@ async function upSubmit(){
       }
       // Render auto-created image slots
       imgRenderSlots();
+      // Store uploaded products for New In 2 addition
+      window._lastUploadedProducts = window._lastUploadedProducts || [];
+      // Reload products from Shopify so search works for newly uploaded products
+      if(csvOk>0){
+        loadProducts().then(()=>{
+          const inp=document.getElementById('imgSearchInput');
+          if(inp) inp.placeholder='🔍 Search '+(allProducts||[]).length.toLocaleString()+' products by name or SKU...';
+        });
+        // Add to correct collection based on type
+        const ctNew = document.getElementById('ct-new');
+        const collId = ctNew && ctNew.checked ? 316670607469 : 305756930157;
+        for(const prod of window._lastUploadedProducts||[]){
+          try{
+            await shopFetch('/collects.json','POST',{collect:{product_id:prod.id,collection_id:collId}});
+          }catch(e){ console.warn('Add to collection failed:', e.message); }
+        }
+        // Auto-limit New In collection if checkbox is checked
+        const autoLimit = document.getElementById('autoLimitNewIn');
+        if(autoLimit && autoLimit.checked){
+          autoLimitNewInCollection();
+        }
+      }
       document.getElementById('upCsvResult').style.display='block';
       document.getElementById('upCsvResult').innerHTML='<div class="alert '+(csvFail===0?'al-green':'al-amber')+'"><div>'+(csvFail===0?'✅':'⚠')+'</div><div>'
         +(csvFail===0
@@ -5698,6 +5971,143 @@ function toggleLoginPwd(){
   inp.type=inp.type==='password'?'text':'password';
 }
 
+// ── Auto-limit New In Collection ──
+async function autoLimitNewInCollection(){
+  const NEW_IN_ID = '316670607469';
+  const LIMIT = 100;
+  try {
+    // Fetch all products in New In collection
+    let allProds = [];
+    let sinceId = 0;
+    while(true){
+      const data = await shopFetch(`/products.json?limit=250&collection_id=${NEW_IN_ID}&fields=id,title,created_at&since_id=${sinceId}`);
+      const prods = data.products||[];
+      if(!prods.length) break;
+      allProds = [...allProds, ...prods];
+      sinceId = prods[prods.length-1].id;
+      if(prods.length < 250) break;
+    }
+
+    if(allProds.length <= LIMIT) return; // already within limit
+
+    // Sort newest first
+    allProds.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    const toRemove = allProds.slice(LIMIT);
+
+    // Remove in batches of 5
+    for(let i=0; i<toRemove.length; i+=5){
+      const batch = toRemove.slice(i, i+5);
+      await Promise.all(batch.map(async p=>{
+        try{
+          const c = await shopFetch(`/collects.json?product_id=${p.id}&collection_id=${NEW_IN_ID}`);
+          if(c?.collects?.length){
+            await Promise.all(c.collects.map(col=>shopFetch(`/collects/${col.id}.json`,'DELETE')));
+          }
+        }catch(e){ console.warn('Auto-limit remove failed:', p.id); }
+      }));
+      await new Promise(r=>setTimeout(r,300));
+    }
+    console.log('✅ Auto-limit: New In collection limited to '+LIMIT+' products');
+  } catch(e){
+    console.warn('Auto-limit failed:', e.message);
+  }
+}
+
+function openDebugPanel(){
+  document.getElementById('debugPanel').style.display='flex';
+}
+function closeDebugPanel(){
+  document.getElementById('debugPanel').style.display='none';
+}
+function debugClear(){
+  document.getElementById('debugOutput').textContent='Ready. Click "Run All Checks" to test all connections.';
+}
+function debugLog(msg, color){
+  const out = document.getElementById('debugOutput');
+  const line = document.createElement('span');
+  line.style.color = color||'#ccc';
+  line.textContent = msg + '\n';
+  out.appendChild(line);
+  out.scrollTop = out.scrollHeight;
+}
+function debugSep(title){
+  debugLog('\n━━━ '+title+' ━━━', '#e8c547');
+}
+async function debugRunAll(){
+  document.getElementById('debugOutput').textContent='';
+  debugLog('Starting full dashboard diagnostic...\n','#888');
+  await debugCheckShopify();
+  await debugCheckSheets();
+  await debugCheckXstack();
+  await debugCheckSupabase();
+  debugLog('\n✓ All checks complete.','#10b981');
+}
+async function debugCheckShopify(){
+  debugSep('SHOPIFY');
+  try{
+    const _workerUrl='https://mendeez-shopify.divine-mouse-0258.workers.dev';
+    debugLog('Store: '+STORE);
+    debugLog('Worker: '+_workerUrl);
+    const url=_workerUrl+'?store='+encodeURIComponent(STORE)+'&token='+encodeURIComponent(TOKEN)+'&ep='+encodeURIComponent('/shop.json');
+    const res=await fetch(url);
+    const data=await res.json();
+    if(data.shop){
+      debugLog('✅ Connected: '+data.shop.name+' ('+data.shop.domain+')','#10b981');
+      debugLog('   Plan: '+data.shop.plan_name);
+      debugLog('   Currency: '+data.shop.currency);
+    } else {
+      debugLog('❌ Failed: '+JSON.stringify(data).slice(0,100),'#f87171');
+    }
+    debugLog('   Orders loaded: '+ordersData.length);
+    debugLog('   Products loaded: '+(window.allProducts||[]).length);
+  }catch(e){debugLog('❌ Error: '+e.message,'#f87171');}
+}
+async function debugCheckSheets(){
+  debugSep('GOOGLE SHEETS');
+  try{
+    debugLog('Sheet ID: '+SHEET_ID);
+    debugLog('Ads: '+ADS_TAB+' | Courier: '+CRR_TAB+' | CS: '+CS_TAB);
+    const url='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(ADS_TAB);
+    const res=await fetch(url);
+    if(res.ok){debugLog('✅ Sheets accessible','#10b981');}
+    else{debugLog('❌ Sheets error: '+res.status,'#f87171');}
+    debugLog('   Ads rows: '+(window._adsRaw||[]).length);
+    debugLog('   Courier rows: '+(window.allCrr||[]).length);
+  }catch(e){debugLog('❌ Error: '+e.message,'#f87171');}
+}
+async function debugCheckXstack(){
+  debugSep('XSTACK OMS');
+  try{
+    const res=await fetch(XSTACK_AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({clientId:XSTACK_CLIENT_ID,clientSecret:XSTACK_SECRET,grantType:'client_credentials',companyCode:XSTACK_COMPANY})});
+    const data=await res.json();
+    if(data.access_token){
+      debugLog('✅ Token OK (expires in '+data.expires_in+'s)','#10b981');
+      const token=data.access_token;
+      for(const st of ['DISPATCHED','ORDER_DELIVERED','DEAD_VIA_CUSTOMER','RETURN_VERIFICATION']){
+        const url=XSTACK_ORDERS_URL+'?order_status='+encodeURIComponent(st)+'&location_id='+XSTACK_LOCATION+'&start_date=2026-06-01T00:00:00%2B05:00&end_date=2026-06-30T23:59:59%2B05:00&size=5&page=1&token='+encodeURIComponent(token);
+        const r=await fetch(url);
+        const d=await r.json();
+        const total=d.page?(d.page.total_elements||d.page.totalElements||0):0;
+        debugLog('   '+st+': '+total+' orders',total>0?'#10b981':'#888');
+      }
+    } else {
+      debugLog('❌ No token: '+JSON.stringify(data).slice(0,100),'#f87171');
+    }
+  }catch(e){debugLog('❌ Error: '+e.message,'#f87171');}
+}
+async function debugCheckSupabase(){
+  debugSep('SUPABASE');
+  try{
+    debugLog('URL: '+SUPA_URL);
+    const rows=await DB.get('cs_entries','date=gte.2026-06-01&date=lte.2026-06-30');
+    debugLog('✅ Connected','#10b981');
+    debugLog('   CS entries (June): '+(rows||[]).length);
+    const targets=await DB.get('ads_targets','month=eq.2026-06');
+    debugLog('   Ads targets (June): '+(targets||[]).length);
+  }catch(e){debugLog('❌ Error: '+e.message,'#f87171');}
+}
+
 function doEcomLogout(){
   currentUser=null;
   document.getElementById('loginOverlay').style.display='flex';
@@ -6036,6 +6446,25 @@ async function renderCSFromSupabase(){
 }
 
 </script>
+
+<!-- DEBUG PANEL -->
+<div id="debugPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99998;align-items:flex-start;justify-content:center;padding-top:60px;overflow-y:auto">
+  <div style="background:#0d0d0d;border:1px solid #333;border-radius:12px;width:min(820px,96vw);padding:24px;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;color:#f0ede8;font-family:'Syne',sans-serif">🔍 Dashboard Debug Console</div>
+      <button onclick="closeDebugPanel()" style="background:none;border:none;color:#777;cursor:pointer;font-size:18px;padding:0 4px">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button onclick="debugRunAll()" style="background:#e8c547;color:#000;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif">▶ Run All Checks</button>
+      <button onclick="debugCheckShopify()" style="background:#1a1a1a;border:1px solid #333;color:#aaa;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">Shopify</button>
+      <button onclick="debugCheckSheets()" style="background:#1a1a1a;border:1px solid #333;color:#aaa;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">Google Sheets</button>
+      <button onclick="debugCheckXstack()" style="background:#1a1a1a;border:1px solid #333;color:#aaa;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">Xstack</button>
+      <button onclick="debugCheckSupabase()" style="background:#1a1a1a;border:1px solid #333;color:#aaa;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">Supabase</button>
+      <button onclick="debugClear()" style="background:#1a1a1a;border:1px solid #333;color:#666;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace">Clear</button>
+    </div>
+    <div id="debugOutput" style="background:#000;border:1px solid #222;border-radius:8px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#ccc;white-space:pre-wrap;max-height:500px;overflow-y:auto;line-height:1.7">Ready. Click "Run All Checks" to test all connections.</div>
+  </div>
+</div>
 
 <script>
 // Add themed buttons to topbar after page loads

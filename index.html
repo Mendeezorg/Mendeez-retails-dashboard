@@ -354,18 +354,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
   <div class="sh" style="margin-bottom:8px">
     <div class="st" style="display:flex;align-items:center;gap:7px">
       <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block"></span>
-      OMS — Xstack Live Data
+      Operations Data
+      <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)"></span>
     </div>
-
   </div>
   <div id="xs-debug-output" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:12px;margin-bottom:10px;font-family:var(--mono);font-size:11px;color:var(--text);white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
-  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Dispatched MTD</div><div class="sv blue shimmer" id="xs-dispatched">—</div><div class="ssub">Current month</div></div>
-    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Delivered MTD</div><div class="sv green shimmer" id="xs-delivered">—</div><div class="ssub">Current month</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="xs-cancel-mtd">—</div><div class="ssub">Current month placed</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="xs-cancel-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns MTD</div><div class="sv red shimmer" id="xs-return-mtd">—</div><div class="ssub">Current month placed</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns CF</div><div class="sv red shimmer" id="xs-return-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
+    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Dispatched MTD</div><div class="sv blue shimmer" id="xs-dispatched">—</div><div class="ssub" id="xs-dispatched-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-dispatched-pct">—</div></div>
+    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Delivered MTD</div><div class="sv green shimmer" id="xs-delivered">—</div><div class="ssub" id="xs-delivered-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-delivered-pct">—</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="xs-cancel-mtd">—</div><div class="ssub" id="xs-cancel-mtd-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-cancel-mtd-pct">—</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="xs-cancel-cf">—</div><div class="ssub" id="xs-cancel-cf-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-cancel-cf-pct">—</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns MTD</div><div class="sv red shimmer" id="xs-return-mtd">—</div><div class="ssub" id="xs-return-mtd-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-return-mtd-pct">—</div></div>
+    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns CF</div><div class="sv red shimmer" id="xs-return-cf">—</div><div class="ssub" id="xs-return-cf-sub">—</div><div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="xs-return-cf-pct">—</div></div>
+    <div class="sc" style="border-color:#8b5cf6"><div class="sl">Order Adjustment</div><div class="sv shimmer" id="xs-order-adj" style="color:#8b5cf6">—</div><div class="ssub" id="xs-order-adj-sub">Shopify Returns − CSV</div></div>
   </div>
 
   <!-- DATE-WISE SHOPIFY BREAKDOWN -->
@@ -559,23 +560,114 @@ tr:hover td{background:rgba(255,255,255,.02)}
     </div>
   </div>
 
-  <!-- XSTACK CARDS — same as overview -->
-  <div class="sh"><div class="st" style="color:var(--accent)">OMS — Xstack Live Data</div></div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
-    <div class="sc" style="border-color:var(--blue-dim)"><div class="sl">Dispatched MTD</div><div class="sv blue shimmer" id="cs-xs-dispatched">—</div><div class="ssub">Current month</div></div>
-    <div class="sc" style="border-color:var(--green-dim)"><div class="sl">Delivered MTD</div><div class="sv green shimmer" id="cs-xs-delivered">—</div><div class="ssub">Current month</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation MTD</div><div class="sv red shimmer" id="cs-xs-cancel-mtd">—</div><div class="ssub">Current month placed</div></div>
+  <!-- OPERATIONS DATA CARDS -->
+  <div class="sh" style="margin-bottom:8px">
+    <div class="st" style="display:flex;align-items:center;gap:7px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block"></span>
+      Operations Data
+      <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="opsLastUpload" style="font-size:11px;color:var(--muted);font-family:var(--mono)"></span>
+      <div id="opsDropZone" onclick="document.getElementById('opsFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+        ondragleave="this.style.borderColor='var(--border2)'"
+        ondrop="opsHandleDrop(event)"
+        title="Upload Order Dump (.xlsx or .csv)"
+        style="cursor:pointer;border:1.5px dashed var(--border2);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);transition:all .2s">
+        <span style="font-size:16px">📂</span>
+        <span>Upload Order Dump</span>
+      </div>
+      <input type="file" id="opsFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="opsHandleFile(this.files[0])">
+    </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Cancellation CF</div><div class="sv red shimmer" id="cs-xs-cancel-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns MTD</div><div class="sv red shimmer" id="cs-xs-return-mtd">—</div><div class="ssub">Current month placed</div></div>
-    <div class="sc" style="border-color:var(--red-dim)"><div class="sl">Returns CF</div><div class="sv red shimmer" id="cs-xs-return-cf">—</div><div class="ssub">Prev month carry fwd</div></div>
+  <div id="opsUploadStatus" style="display:none;font-size:11px;font-family:var(--mono);color:var(--accent);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px"></div>
+  <!-- Top 4 simple cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px" id="opsTopCards">
+    <div class="sc" style="border-color:var(--blue-dim)">
+      <div class="sl">Dispatched</div>
+      <div class="sv blue" id="ops-dispatched">—</div>
+      <div class="ssub" id="ops-dispatched-sub">—</div>
+      <div style="font-size:11px;color:#e8c547;font-family:var(--mono);margin-top:2px" id="ops-dispatched-pct">—</div>
+    </div>
+    <div class="sc" style="border-color:var(--green-dim)">
+      <div class="sl">Delivered</div>
+      <div class="sv green" id="ops-delivered">—</div>
+      <div class="ssub" id="ops-delivered-sub">—</div>
+      <div style="font-size:11px;color:#e8c547;font-family:var(--mono);margin-top:2px" id="ops-delivered-pct">—</div>
+    </div>
+    <div class="sc" style="border-color:var(--accent-dim,#333)">
+      <div class="sl">Pending MTD</div>
+      <div class="sv" id="ops-pending" style="color:#e8c547">—</div>
+      <div class="ssub" id="ops-pending-sub">—</div>
+      <div style="font-size:11px;color:#e8c547;font-family:var(--mono);margin-top:2px" id="ops-pending-pct">—</div>
+    </div>
+    <div class="sc" style="border-color:#8b5cf6">
+      <div class="sl">Order Adjustment</div>
+      <div class="sv" id="ops-adj" style="color:#8b5cf6">—</div>
+      <div class="ssub">Shopify Returns − CSV</div>
+      <div style="font-size:11px;font-family:var(--mono);margin-top:2px" id="ops-adj-dir">—</div>
+    </div>
   </div>
 
-  <!-- CANCELLATION REASONS — from Xstack -->
-  <div class="sh"><div class="st">Cancellation Reasons — MTD</div></div>
-  <div class="ic" id="xs-cancel-reasons" style="padding:16px;margin-bottom:4px">
-    <div style="color:var(--muted);font-size:12px">Loading...</div>
+  <!-- Returns expandable card -->
+  <div class="ic" id="opsRetCard" style="margin-bottom:10px;padding:0;overflow:hidden;display:none">
+    <div onclick="opsToggle('ret')" style="padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-left:3px solid #f59e0b">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Returns</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:#f59e0b" id="ops-ret-total">—</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="ops-ret-total-sub">—</div>
+        <div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="ops-ret-total-pct">—</div>
+      </div>
+      <span id="ops-ret-arrow" style="color:var(--muted);transition:transform .2s">▼</span>
+    </div>
+    <div id="ops-ret-body" style="display:none;border-top:1px solid var(--border);padding:16px">
+      <div style="font-size:10px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Returns MTD</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Orders</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f59e0b" id="ops-rmtd-orders">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Items</div><div style="font-size:14px;font-weight:700;font-family:var(--mono)" id="ops-rmtd-items">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PKR</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f59e0b" id="ops-rmtd-pkr">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">% Gross</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#e8c547" id="ops-rmtd-pct">—</div></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Returns CF</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Orders</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f87171" id="ops-rcf-orders">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Items</div><div style="font-size:14px;font-weight:700;font-family:var(--mono)" id="ops-rcf-items">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PKR</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f87171" id="ops-rcf-pkr">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">% Gross</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#e8c547" id="ops-rcf-pct">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancellations expandable card -->
+  <div class="ic" id="opsCancelCard" style="margin-bottom:16px;padding:0;overflow:hidden;display:none">
+    <div onclick="opsToggle('cancel')" style="padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-left:3px solid #f87171">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#f87171;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total Cancellations</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:#f87171" id="ops-cancel-total">—</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="ops-cancel-total-sub">—</div>
+        <div style="font-size:11px;color:#e8c547;font-family:var(--mono)" id="ops-cancel-total-pct">—</div>
+      </div>
+      <span id="ops-cancel-arrow" style="color:var(--muted);transition:transform .2s">▼</span>
+    </div>
+    <div id="ops-cancel-body" style="display:none;border-top:1px solid var(--border);padding:16px">
+      <div style="font-size:10px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Cancellation MTD</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Orders</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f87171" id="ops-cmtd-orders">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Items</div><div style="font-size:14px;font-weight:700;font-family:var(--mono)" id="ops-cmtd-items">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PKR</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f87171" id="ops-cmtd-pkr">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">% Gross</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#e8c547" id="ops-cmtd-pct">—</div></div>
+      </div>
+      <div id="ops-cmtd-reasons"></div>
+      <div style="font-size:10px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px">Cancellation CF</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Orders</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f59e0b" id="ops-ccf-orders">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Items</div><div style="font-size:14px;font-weight:700;font-family:var(--mono)" id="ops-ccf-items">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PKR</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#f59e0b" id="ops-ccf-pkr">—</div></div>
+        <div style="background:var(--surface2);border-radius:6px;padding:10px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">% Gross</div><div style="font-size:14px;font-weight:700;font-family:var(--mono);color:#e8c547" id="ops-ccf-pct">—</div></div>
+      </div>
+      <div id="ops-ccf-reasons"></div>
+    </div>
   </div>
 
   <!-- DAILY AGENT ENTRIES — from Supabase -->
@@ -1479,7 +1571,7 @@ async function reloadShopifyData(){
     if(_csRows.length){try{processCS(_csRows);}catch(e){console.warn('processCS error:',e.message);}}
     renderDailyStats();
     loadAdsTargets(); // reload targets for selected month
-    loadXstackData(); // reload Xstack OMS data
+    opsRenderCards(); // re-render ops data cards
     // Defer heavy renders to next frame so UI stays responsive
     setTimeout(()=>{
       renderWeeklyTop20();
@@ -2666,6 +2758,7 @@ function renderDailyStats(){
     const net=document.getElementById('s-shopify-net');
     if(gross){
       const g=ordersData.reduce((s,o)=>s+parseFloat(o.total_line_items_price||0),0);
+      window._shopifyGrossValue = g;
       gross.textContent=g>0?'PKR '+fmt(g):'—';
       gross.className='sv amber';
       gross.style.height='';gross.style.width='';
@@ -2679,6 +2772,8 @@ function renderDailyStats(){
       const n=g-disc-returns;
       window._netSalesBase={gross:g,disc:disc};
       net.textContent=n>0?'PKR '+fmt(n):'—';
+      // Refresh ops cards with updated Shopify gross/returns
+      if(typeof opsRenderCards === 'function') setTimeout(opsRenderCards, 100);
       net.className='sv green';
       net.style.height='';net.style.width='';
       const ns=document.getElementById('s-shopify-net-sub');
@@ -2756,8 +2851,9 @@ async function fetchReturnsByDate(){
       cursor=ordersData.pageInfo.endCursor;
     }
 
-    window._shopifyReturns=returnCount;
-    window._shopifyReturnValue=returnValue;
+        window._shopifyReturnValue=returnValue;
+    // Re-render ops cards now that returns value is known
+    if(typeof opsRenderCards==='function') setTimeout(opsRenderCards, 50);
     if(retEl){
       retEl.textContent=returnValue>0?'PKR '+fmt(returnValue):'—';
       retEl.className=returnValue>0?'sv red':'sv muted';
@@ -3327,7 +3423,7 @@ function switchTab(name,el){
   if(datebar) datebar.style.display='flex';
   if(name==='report')buildReport();
   if(name==='report')buildReport();
-  if(name==='cs') setTimeout(renderCSFromSupabase,200);
+  if(name==='cs'){ setTimeout(renderCSFromSupabase,200); if(!_opsRows||_opsRows.length===0) setTimeout(opsLoadFromSupabase,300); else setTimeout(opsRenderCards,300); }
   if(name==='ads'){ loadAdsTargets(); }
   if(name==='cards') loadCardData();
   if(name==='gtech'){ gtechinvPopulateSelect(); if(Object.keys(_gtechStockData).length===0) gtechLoadAll(); }
@@ -3552,7 +3648,7 @@ window.addEventListener('load',()=>{
     loadAll().catch(e=>console.warn('Auto-connect failed:',e));
   }
   renderCSFromSupabase();
-  loadXstackData();
+
   // Restore manual field values
   if(manualData.stock)document.getElementById('i-stock').value=manualData.stock;
   if(manualData.web)document.getElementById('i-web').value=manualData.web;
@@ -3880,6 +3976,19 @@ function upCollectionTypeChange(){
     autoLimit.disabled = !isNew;
     if(autoLimitLabel) autoLimitLabel.style.opacity = isNew ? '1' : '0.4';
   }
+  // Auto-fill tags field
+  const tagsField = document.getElementById('pf-tags');
+  if(tagsField){
+    if(!isNew){
+      tagsField.value = 'factory outlet';
+      tagsField.disabled = true;
+      tagsField.style.opacity = '0.6';
+    } else {
+      if(tagsField.value === 'factory outlet') tagsField.value = '';
+      tagsField.disabled = false;
+      tagsField.style.opacity = '1';
+    }
+  }
 }
 
 function sortRuleChanged(){
@@ -4139,7 +4248,7 @@ function switchOverviewMonth(){
   document.getElementById('todayDate').textContent=val+' — MTD';
   if(STORE&&STORE!=='demo'&&TOKEN) reloadShopifyData();
   else renderDailyStats();
-  loadXstackData();
+
 }
 
 // ══════════════════════════════════════════════════
@@ -4163,6 +4272,8 @@ let _upImgUnmatched = [];
     });
   }
   document.addEventListener('DOMContentLoaded', () => {
+    // Load ops data from Supabase on page init
+    setTimeout(opsLoadFromSupabase, 1500);
     setupDrop('upCsvDrop',  files => upHandleCSV(files[0]));
     setupDrop('upImgDrop',  files => upHandleImages(files));
   });
@@ -4471,7 +4582,10 @@ function upFormBuildProduct(){
   const price   = document.getElementById('pf-price').value.trim();
   const compare = document.getElementById('pf-compare').value.trim();
   const design  = document.getElementById('pf-design').value.trim();
-  const tags    = document.getElementById('pf-tags').value.trim();
+  const tagsRaw = document.getElementById('pf-tags').value.trim();
+  const isFO    = document.getElementById('ct-fo')?.checked;
+  // Factory Outlet products get only 'factory outlet' tag
+  const tags    = isFO ? 'factory outlet' : tagsRaw;
   const descRaw = document.getElementById('pf-desc').value.trim();
   const mode    = 'sizes'; // legacy — mode now driven by category
   const qty     = parseInt(document.getElementById('pf-qty').value)||0;
@@ -4710,73 +4824,9 @@ function renderAdsTargetCards(){
 // XSTACK INTEGRATION
 // ══════════════════════════════════════════════════
 const XSTACK_WORKER     = 'https://mendeez-shopify.divine-mouse-0258.workers.dev';
-const XSTACK_AUTH_URL   = XSTACK_WORKER + '/xstack-token';
-const XSTACK_ORDERS_URL = XSTACK_WORKER + '/xstack-orders';
-const XSTACK_CLIENT_ID  = 'api-user-vFB6QQAjwX';
-const XSTACK_SECRET     = 'flha1LaPwY-Nuxui2W5Y';
-const XSTACK_COMPANY    = '0b8bd9e671e00824';
-const XSTACK_LOCATION   = '2021';
 
-let _xToken = null;
-let _xTokenExpiry = 0;
 
-async function xGetToken(){
-  if(_xToken && Date.now() < _xTokenExpiry - 30000) return _xToken;
-  const res = await fetch(XSTACK_AUTH_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      clientId: XSTACK_CLIENT_ID,
-      clientSecret: XSTACK_SECRET,
-      grantType: 'client_credentials',
-      companyCode: XSTACK_COMPANY
-    })
-  });
-  const data = await res.json();
-  _xToken = data.access_token;
-  _xTokenExpiry = Date.now() + ((data.expires_in||300)-10)*1000;
-  return _xToken;
-}
 
-async function xFetchOrders(status, startDate, endDate, forcedToken){
-  const token = forcedToken || await xGetToken();
-  // Format dates as PKT (+05:00) — use UTC methods since dates are stored as UTC
-  const fmtD = d => {
-    const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
-    const y=pkt.getUTCFullYear(), m=String(pkt.getUTCMonth()+1).padStart(2,'0'), dd=String(pkt.getUTCDate()).padStart(2,'0');
-    return `${y}-${m}-${dd}T00:00:00%2B05:00`;
-  };
-  const fmtEnd = d => {
-    const pkt = new Date(d.getTime() + PKT_OFFSET_MS);
-    const y=pkt.getUTCFullYear(), m=String(pkt.getUTCMonth()+1).padStart(2,'0'), dd=String(pkt.getUTCDate()).padStart(2,'0');
-    return `${y}-${m}-${dd}T23:59:59%2B05:00`;
-  };
-
-  let allOrders = [], page = 1;
-  while(true){
-    const url = XSTACK_ORDERS_URL
-      + '?order_status='+encodeURIComponent(status)
-      + '&location_id='+XSTACK_LOCATION
-      + '&start_date='+fmtD(startDate)
-      + '&end_date='+fmtEnd(endDate)
-      + '&size=500&page='+page+'&token='+encodeURIComponent(token);
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('Xstack '+status+': '+res.status);
-    const data = await res.json();
-    const orders = data.orders || [];
-    allOrders = allOrders.concat(orders);
-    const totalElements = data.page ? (data.page.total_elements || data.page.totalElements || 0) : 0;
-    if(allOrders.length >= totalElements || orders.length === 0) break;
-    page++;
-  }
-  return allOrders;
-}
-
-function xGetCancelReason(order){
-  const details = order.orders_brand_details || [];
-  const r = details.find(d=>d.attribute==='cancel_return_reason');
-  return r ? r.value : '';
-}
 
 async function xDebugTest(){
   const out = document.getElementById('xs-debug-output');
@@ -4837,127 +4887,6 @@ async function xDebugTest(){
   } catch(e){ out.textContent += 'ERR: '+e.message; }
 }
 
-async function loadXstackData(){
-  const {from, to} = getRange();
-  if(!from || !to) return;
-
-  // MTD = use actual selected from date (May 1-31 shows May, not June)
-  const toPKT = d => new Date(d.getTime() + PKT_OFFSET_MS);
-  const fromPKTdate = toPKT(from);
-  const toPKTdate   = toPKT(to);
-  const mtdStart = new Date(Date.UTC(fromPKTdate.getUTCFullYear(), fromPKTdate.getUTCMonth(), 1) - PKT_OFFSET_MS);
-  const cfStart  = new Date(Date.UTC(fromPKTdate.getUTCFullYear(), fromPKTdate.getUTCMonth()-1, 1) - PKT_OFFSET_MS);
-  const cfEnd    = new Date(mtdStart.getTime() - 1);
-
-  try {
-    // Show loading state
-    ['xs-dispatched','xs-delivered','xs-cancel-mtd','xs-cancel-cf','xs-return-mtd','xs-return-cf'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){el.textContent='...';el.classList.add('shimmer');}
-    });
-
-    // Get fresh token once for all requests
-    const freshToken = await xGetToken();
-
-    // Fetch all 4 statuses for MTD
-    const [dispatched, delivered, cancelledMTD, returnsMTD] = await Promise.all([
-      xFetchOrders('DISPATCHED',           mtdStart, to, freshToken),
-      xFetchOrders('ORDER_DELIVERED',      mtdStart, to, freshToken),
-      xFetchOrders('DEAD_VIA_CUSTOMER',    mtdStart, to, freshToken),
-      xFetchOrders('RETURN_VERIFICATION',  mtdStart, to, freshToken),
-    ]);
-
-    // Fetch CF (carry forward = previous month dispatched orders cancelled/returned this month)
-    const [cancelledCF, returnsCF] = await Promise.all([
-      xFetchOrders('DEAD_VIA_CUSTOMER',    cfStart, cfEnd, freshToken),
-      xFetchOrders('RETURN_VERIFICATION',  cfStart, cfEnd, freshToken),
-    ]);
-
-    // Update cards
-    const s = id=>{ const el=document.getElementById(id); if(el) el.classList.remove('shimmer'); return el; };
-    const set = (id,val) => { const el=s(id); if(el) el.textContent=val; };
-
-    // Helper: count total items across orders
-    const countItems = orders => orders.reduce((s,o)=>{
-      const qty = (o.products||[]).filter(p=>p!=null).reduce((ps,p)=>ps+(parseInt(p.quantity)||0),0);
-      return s+qty;
-    },0);
-
-    const countPKR = orders => orders.reduce((s,o)=>{
-      // Try direct fields first
-      let amt = parseFloat(o.total_amount_pkr) || parseFloat(o.total_amount) || parseFloat(o.cod_amount) || parseFloat(o.grand_total) || parseFloat(o.amount_pkr) || 0;
-      // Fallback: check orders_brand_details for parent_total_amount
-      if(!amt && Array.isArray(o.orders_brand_details)){
-        const field = o.orders_brand_details.find(d => d.attribute === 'parent_total_amount');
-        if(field) amt = parseFloat(field.value) || 0;
-      }
-      return s + amt;
-    }, 0);
-
-    const setCard = (id, orders) => {
-      const el = s(id);
-      if(!el) return;
-      const orders_count = orders.length;
-      const items_count  = countItems(orders);
-      const pkr_total    = countPKR(orders);
-      el.innerHTML = `<div style="font-size:20px;font-weight:700;font-family:var(--mono)">PKR ${fmt(Math.round(pkr_total))}</div>`
-        + `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px">${items_count.toLocaleString()} items &nbsp;·&nbsp; ${orders_count.toLocaleString()} orders</div>`;
-    };
-
-    setCard('xs-dispatched',  dispatched);
-    setCard('xs-delivered',   delivered);
-    setCard('xs-cancel-mtd',  cancelledMTD);
-    setCard('xs-cancel-cf',   cancelledCF);
-    setCard('xs-return-mtd',  returnsMTD);
-    setCard('xs-return-cf',   returnsCF);
-    // Mirror to CS tab cards
-    setCard('cs-xs-dispatched',  dispatched);
-    setCard('cs-xs-delivered',   delivered);
-    setCard('cs-xs-cancel-mtd',  cancelledMTD);
-    setCard('cs-xs-cancel-cf',   cancelledCF);
-    setCard('cs-xs-return-mtd',  returnsMTD);
-    setCard('cs-xs-return-cf',   returnsCF);
-
-    // Cancellation reasons from MTD cancelled orders
-    const reasonMap = {};
-    cancelledMTD.forEach(o=>{
-      const reason = xGetCancelReason(o) || 'Not specified';
-      reasonMap[reason] = (reasonMap[reason]||0)+1;
-    });
-    renderXstackCancelReasons(reasonMap, cancelledMTD.length);
-
-  } catch(err) {
-    console.error('Xstack error:', err);
-    const errMsg = err.message || String(err);
-    ['xs-dispatched','xs-delivered','xs-cancel-mtd','xs-cancel-cf','xs-return-mtd','xs-return-cf',
-     'cs-xs-dispatched','cs-xs-delivered','cs-xs-cancel-mtd','cs-xs-cancel-cf','cs-xs-return-mtd','cs-xs-return-cf'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){
-        el.innerHTML='<div style="font-size:11px;color:var(--red);font-family:var(--mono)">ERR: '+errMsg+'</div>';
-        el.classList.remove('shimmer');
-      }
-    });
-  }
-}
-
-function renderXstackCancelReasons(reasonMap, total){
-  const el = document.getElementById('xs-cancel-reasons');
-  if(!el) return;
-  const entries = Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
-  if(!entries.length){ el.innerHTML='<div style="color:var(--muted);font-size:12px">No cancellations in this period</div>'; return; }
-  el.innerHTML = entries.map(([reason,count])=>{
-    const pct = total>0?Math.round(count/total*100):0;
-    return `<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span style="color:var(--text)">${reason}</span>
-        <span style="font-family:var(--mono);color:var(--accent)">${count} <span style="color:var(--muted)">(${pct}%)</span></span>
-      </div>
-      <div style="background:var(--surface2);border-radius:3px;height:4px">
-        <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px"></div>
-      </div>
-    </div>`;
-  }).join('');
-}
 // ── IMAGE HANDLING — Search & Drop System ──
 // _upImgMatched: productId → {productId, title, sku, images:[{file,pos}]}
 
@@ -7278,6 +7207,335 @@ function clearCardFilter(){
 }
 
 function fmtPKR(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ═══════════════════════════════════════════════════
+// OPERATIONS DATA — CSV/Excel Upload + Supabase
+// ═══════════════════════════════════════════════════
+let _opsRows = [];
+const OPS_TABLE = 'ops_order_dump';
+
+function opsColIdx(letter){
+  letter=letter.toUpperCase();
+  if(letter.length===1) return letter.charCodeAt(0)-65;
+  return (letter.charCodeAt(0)-64)*26+(letter.charCodeAt(1)-65);
+}
+
+function opsPd(str){
+  if(!str||str==='null'||str==='')return null;
+  str=str.trim();
+  // Format 1: DD/MM/YYYY HH:MM
+  const m1=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if(m1){ const hr=parseInt(m1[4])||0,mn=parseInt(m1[5])||0; return new Date(+m1[3],+m1[2]-1,+m1[1],hr,mn,0); }
+  // Format 2: M/DD/YY HH:MM (Excel)
+  const m2=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if(m2){ const yr=parseInt(m2[3])+2000,hr=parseInt(m2[4])||0,mn=parseInt(m2[5])||0; return new Date(yr,+m2[1]-1,+m2[2],hr,mn,0); }
+  const d=new Date(str); if(!isNaN(d)) return d;
+  return null;
+}
+
+function opsIsBlank(s){ return !s||s.trim()===''||s.trim()==='null'; }
+function opsFmt(n){ return Math.round(n).toLocaleString(); }
+function opsSumPKR(arr){ const seen={}; return arr.reduce((s,r)=>{ if(!r.orderId||seen[r.orderId])return s; seen[r.orderId]=true; return s+r.value; },0); }
+function opsCountOrders(arr){ return new Set(arr.map(r=>r.orderId).filter(Boolean)).size||arr.length; }
+function opsSumQty(arr){ return arr.reduce((s,r)=>s+r.qty,0); }
+function opsPct(val,gross){ if(!gross||!val)return'—'; return(val/gross*100).toFixed(1)+'%'; }
+
+function opsParseRows(headers, dataRows){
+  const idx={
+    orderId: headers.findIndex(h=>h.includes('orderid')),
+    value:   headers.findIndex(h=>h==='ordertotal_basecurrency'),
+    qty:     headers.findIndex(h=>h.includes('itemquantity')),
+    created: headers.findIndex(h=>h==='orderdate'),
+    dispatched: headers.findIndex(h=>h==='dispatched'),
+    delivered:  headers.findIndex(h=>h==='orderdelivered'),
+    cancelled:  headers.findIndex(h=>h==='cancelled'),
+    returned:   headers.findIndex(h=>h==='orderreturned'),
+    retStatus:  headers.findIndex(h=>h.toLowerCase().trim()==='returned status'||h.toLowerCase().trim()==='returnedstatus'||h.toLowerCase().trim()==='return status'),
+    cancelReason: headers.findIndex(h=>h.includes('cancellation_reason')),
+  };
+  const rows=[];
+  for(const r of dataRows){
+    if(!r||!r[idx.orderId])continue;
+    const toStr = v => v ? String(v).trim() : '';
+    rows.push({
+      orderId:      toStr(r[idx.orderId]),
+      value:        parseFloat(r[idx.value])||0,
+      qty:          parseInt(r[idx.qty])||0,
+      created:      toStr(r[idx.created]),
+      dispatched:   toStr(r[idx.dispatched]),
+      delivered:    toStr(r[idx.delivered]),
+      cancelled:    toStr(r[idx.cancelled]),
+      returned:     toStr(r[idx.returned]),
+      retStatus:    toStr(r[idx.retStatus]),
+      cancelReason: toStr(r[idx.cancelReason]),
+    });
+  }
+  return rows;
+}
+
+function opsHandleDrop(e){
+  e.preventDefault();
+  document.getElementById('opsDropZone').style.borderColor='var(--border2)';
+  opsHandleFile(e.dataTransfer.files[0]);
+}
+
+async function opsHandleFile(file){
+  if(!file)return;
+  const statusEl=document.getElementById('opsUploadStatus');
+  statusEl.style.display='block';
+  statusEl.textContent='Reading '+file.name+'...';
+
+  const isExcel=file.name.match(/\.xlsx?$/i);
+  let rows=[];
+
+  if(isExcel){
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:false});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'MM/DD/YY HH:mm'});
+    if(!data.length){statusEl.textContent='Empty file';return;}
+    const headers=data[0].map(h=>(h||'').toString().toLowerCase().trim());
+    rows=opsParseRows(headers, data.slice(1));
+  } else {
+    const text=await file.text();
+    const lines=text.split('\n');
+    const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+    const dataRows=lines.slice(1).filter(l=>l.trim()).map(l=>{
+      const cols=[]; let cur=''; let inQ=false;
+      for(const ch of l){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){cols.push(cur.trim().replace(/^"|"$/g,''));cur='';}else{cur+=ch;} }
+      cols.push(cur.trim().replace(/^"|"$/g,''));
+      return cols;
+    });
+    rows=opsParseRows(headers, dataRows);
+  }
+
+  statusEl.textContent='Saving '+rows.length+' rows to Supabase...';
+  _opsRows=rows;
+
+  // Save to Supabase
+  await opsSaveToSupabase(rows, file.name);
+
+  statusEl.textContent='✅ '+rows.length+' rows saved from '+file.name;
+  document.getElementById('opsLastUpload').textContent='Last upload: '+file.name.replace(/^.*[\\/]/,'');
+
+  // Update cards with current date range
+  opsRenderCards();
+}
+
+async function opsSaveToSupabase(rows, filename){
+  try {
+    const batchKey = filename.replace(/[^a-zA-Z0-9-_]/g,'_');
+    const statusEl = document.getElementById('opsUploadStatus');
+
+    // Deduplicate by orderId — keep one row per order (sum qty, keep first value)
+    const orderMap = {};
+    rows.forEach(r => {
+      if(!r.orderId) return;
+      if(!orderMap[r.orderId]){
+        orderMap[r.orderId] = {...r};
+      } else {
+        // Add qty for multi-item orders
+        orderMap[r.orderId].qty += r.qty || 0;
+      }
+    });
+    const uniqueRows = Object.values(orderMap);
+
+    const BATCH=100;
+    let saved=0;
+    for(let i=0;i<uniqueRows.length;i+=BATCH){
+      const batch=uniqueRows.slice(i,i+BATCH).map(r=>{
+        const {id, ...rest} = r;
+        return {...rest, upload_file: batchKey};
+      });
+      await fetch(`${SUPA_URL}/rest/v1/${OPS_TABLE}?on_conflict=orderId`, {
+        method: 'POST',
+        headers: {
+          ...DB.h,
+          'Prefer': 'resolution=ignore-duplicates,return=minimal',
+        },
+        body: JSON.stringify(batch)
+      });
+      saved += batch.length;
+      if(statusEl) statusEl.textContent = `Saving... ${saved}/${uniqueRows.length} unique orders`;
+    }
+    if(statusEl) statusEl.textContent = `✅ ${uniqueRows.length} unique orders saved (from ${rows.length} rows)`;
+  } catch(e){ console.warn('Supabase save failed:', e.message); }
+}
+
+async function opsLoadFromSupabase(){
+  try {
+    const statusEl=document.getElementById('opsUploadStatus');
+    if(statusEl){ statusEl.style.display='block'; statusEl.textContent='Loading operations data...'; }
+    // Fetch all rows using Range header to bypass Supabase default 1000 row limit
+    let data = [];
+    let offset = 0;
+    const CHUNK = 1000;
+    while(true){
+      const chunk = await fetch(`${SUPA_URL}/rest/v1/${OPS_TABLE}?select=*&order=id.asc&limit=${CHUNK}&offset=${offset}`, {
+        headers: {...DB.h, 'Range-Unit':'items', 'Range':`${offset}-${offset+CHUNK-1}`}
+      }).then(r=>r.json()).catch(()=>[]);
+      if(!chunk||!chunk.length) break;
+      data = data.concat(chunk);
+      if(chunk.length < CHUNK) break;
+      offset += CHUNK;
+    }
+    if(data && data.length){
+      // Only update if Supabase has MORE rows than current memory
+      if(data.length >= _opsRows.length){
+        _opsRows = data;
+        if(statusEl) statusEl.textContent='✅ Loaded '+data.length+' rows from Supabase';
+      // Filter only rows relevant to selected date range ± 2 months
+      const {from} = getRange();
+      const cutoff = new Date(from.getFullYear(), from.getMonth()-1, 1);
+      _opsRows = data.filter(r=>{
+        const d = opsPd(r.created);
+        return !d || d >= cutoff;
+      });
+      } else {
+        if(statusEl) statusEl.textContent='Using '+_opsRows.length+' rows from memory';
+      }
+      // Wait for Shopify returns to load before rendering
+      // If returns already loaded render now, otherwise wait up to 10s
+      const _tryRender = (attempts) => {
+        if(window._shopifyReturnValue !== undefined && window._shopifyReturnValue > 0){
+          opsRenderCards();
+        } else if(attempts > 0){
+          setTimeout(()=>_tryRender(attempts-1), 500);
+        } else {
+          opsRenderCards(); // render anyway after timeout
+        }
+      };
+      _tryRender(20); // try every 500ms for up to 10 seconds
+    } else {
+      if(statusEl){ statusEl.style.display='none'; }
+    }
+  } catch(e){ console.warn('Supabase load failed:', e.message); }
+}
+
+function opsRenderCards(){
+  if(!_opsRows.length) return;
+
+  const {from, to} = getRange();
+  const monthStart = new Date(from.getFullYear(), from.getMonth(), 1);
+
+  // Get Shopify gross and returns from already-loaded Shopify data
+  const shopifyGross = window._shopifyGrossValue || 0;
+  const shopifyReturns = window._shopifyReturnValue || 0;
+  _shopifyGross = shopifyGross;
+
+  // Filter rows
+  const disp    = _opsRows.filter(r=>{ const d=opsPd(r.dispatched); return d&&d>=from&&d<=to; });
+  const deliv   = _opsRows.filter(r=>{ const d=opsPd(r.delivered);  return d&&d>=from&&d<=to; });
+  const cancAll = _opsRows.filter(r=>{ const d=opsPd(r.cancelled);  return d&&d>=from&&d<=to; });
+  const retAll  = _opsRows.filter(r=>{ const d=opsPd(r.returned);   return d&&d>=from&&d<=to&&(r.retStatus||'').toLowerCase().trim()==='returned'; });
+  const pend    = _opsRows.filter(r=>{ const d=opsPd(r.created); return d&&d>=from&&d<=to&&opsIsBlank(r.dispatched)&&opsIsBlank(r.cancelled); });
+
+  const cMTD = cancAll.filter(r=>{ const d=opsPd(r.created); return d&&d>=monthStart; });
+  const cCF  = cancAll.filter(r=>{ const d=opsPd(r.created); return d&&d<monthStart; });
+  const rMTD = retAll.filter(r=>{ const d=opsPd(r.created);  return d&&d>=monthStart; });
+  const rCF  = retAll.filter(r=>{ const d=opsPd(r.created);  return d&&d<monthStart; });
+
+  const gross = _shopifyGross || shopifyGross;
+
+  // ── Overview cards ──
+  const setOv=(id,arr)=>{
+    const el=document.getElementById(id); if(!el)return;
+    const pkr=opsSumPKR(arr);
+    el.textContent='PKR '+opsFmt(pkr);
+    const sub=document.getElementById(id+'-sub'); if(sub) sub.textContent=opsSumQty(arr)+' items · '+opsCountOrders(arr)+' orders';
+    const pctEl=document.getElementById(id+'-pct'); if(pctEl) pctEl.textContent=opsPct(pkr,gross)+' of Shopify gross';
+  };
+  setOv('xs-dispatched',disp); setOv('xs-delivered',deliv);
+  setOv('xs-cancel-mtd',cMTD); setOv('xs-cancel-cf',cCF);
+  setOv('xs-return-mtd',rMTD); setOv('xs-return-cf',rCF);
+
+  // Overview Order Adjustment card
+  const ovAdjEl  = document.getElementById('xs-order-adj');
+  const ovAdjSub = document.getElementById('xs-order-adj-sub');
+  const csvDed2  = opsSumPKR(rMTD)+opsSumPKR(rCF)+opsSumPKR(cMTD)+opsSumPKR(cCF);
+  const shopRet2 = window._shopifyReturnValue||0;
+  const adj2     = shopRet2 - csvDed2;
+  if(ovAdjEl){
+    ovAdjEl.textContent = shopRet2>0 ? 'PKR '+opsFmt(Math.abs(adj2)) : '—';
+    ovAdjEl.style.color = adj2>=0 ? '#8b5cf6' : '#f87171';
+  }
+  if(ovAdjSub){
+    ovAdjSub.textContent = shopRet2>0 ? (adj2>=0?'▲ Surplus':'▼ Shortfall') : 'Upload CSV to calculate';
+  }
+
+  // ── CS cards ──
+  const set=(id,sid,pctId,arr)=>{
+    const pkr=opsSumPKR(arr);
+    const el=document.getElementById(id); if(el) el.textContent='PKR '+opsFmt(pkr);
+    const sub=document.getElementById(sid); if(sub) sub.textContent=opsSumQty(arr)+' items · '+opsCountOrders(arr)+' orders';
+    const p=document.getElementById(pctId); if(p) p.textContent=opsPct(pkr,gross)+' of Shopify gross';
+  };
+
+  set('ops-dispatched','ops-dispatched-sub','ops-dispatched-pct',disp);
+  set('ops-delivered','ops-delivered-sub','ops-delivered-pct',deliv);
+  set('ops-pending','ops-pending-sub','ops-pending-pct',pend);
+
+  // Order Adjustment
+  const csvDed = opsSumPKR(rMTD)+opsSumPKR(rCF)+opsSumPKR(cMTD)+opsSumPKR(cCF);
+  const shopRet = window._shopifyReturnValue || 0;
+  const adj = shopRet - csvDed;
+  const adjEl=document.getElementById('ops-adj');
+  const adjDir=document.getElementById('ops-adj-dir');
+  if(adjEl){ adjEl.textContent = shopRet>0 ? 'PKR '+opsFmt(Math.abs(adj)) : '—'; adjEl.style.color=adj>=0?'#8b5cf6':'#f87171'; }
+  if(adjDir){ adjDir.textContent=shopRet>0?(adj>=0?'▲ Surplus':'▼ Shortfall'):'Enter Shopify returns'; adjDir.style.color=adj>=0?'#10b981':'#f87171'; }
+
+  // Returns expandable
+  const retTotalPKR=opsSumPKR(retAll);
+  const retCard=document.getElementById('opsRetCard'); if(retCard) retCard.style.display='block';
+  const rte=document.getElementById('ops-ret-total'); if(rte) rte.textContent='PKR '+opsFmt(retTotalPKR);
+  const rts=document.getElementById('ops-ret-total-sub'); if(rts) rts.textContent=opsSumQty(retAll)+' items · '+opsCountOrders(retAll)+' orders';
+  const rtp=document.getElementById('ops-ret-total-pct'); if(rtp) rtp.textContent=opsPct(retTotalPKR,gross)+' of Shopify gross';
+
+  const setMini=(pre,arr)=>{
+    const o=document.getElementById(pre+'-orders'); if(o) o.textContent=opsCountOrders(arr);
+    const i=document.getElementById(pre+'-items');  if(i) i.textContent=opsSumQty(arr);
+    const p=document.getElementById(pre+'-pkr');    if(p) p.textContent='PKR '+opsFmt(opsSumPKR(arr));
+    const pct=document.getElementById(pre+'-pct');  if(pct) pct.textContent=opsPct(opsSumPKR(arr),gross);
+  };
+  setMini('ops-rmtd',rMTD); setMini('ops-rcf',rCF);
+
+  // Cancellations expandable
+  const cancelTotalPKR=opsSumPKR(cancAll);
+  const cancelCard=document.getElementById('opsCancelCard'); if(cancelCard) cancelCard.style.display='block';
+  const cte=document.getElementById('ops-cancel-total'); if(cte) cte.textContent='PKR '+opsFmt(cancelTotalPKR);
+  const cts=document.getElementById('ops-cancel-total-sub'); if(cts) cts.textContent=opsSumQty(cancAll)+' items · '+opsCountOrders(cancAll)+' orders';
+  const ctp=document.getElementById('ops-cancel-total-pct'); if(ctp) ctp.textContent=opsPct(cancelTotalPKR,gross)+' of Shopify gross';
+
+  setMini('ops-cmtd',cMTD); setMini('ops-ccf',cCF);
+  opsRenderReasons(cMTD,'ops-cmtd-reasons'); opsRenderReasons(cCF,'ops-ccf-reasons');
+}
+
+function opsRenderReasons(arr, elId){
+  const el=document.getElementById(elId); if(!el)return;
+  const reasons={};
+  arr.forEach(r=>{ const k=r.cancelReason||'Not specified'; reasons[k]=(reasons[k]||0)+1; });
+  const sorted=Object.entries(reasons).sort((a,b)=>b[1]-a[1]);
+  const total=arr.length;
+  if(!sorted.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px">Reasons</div>'+
+    sorted.map(([reason,count])=>{
+      const p=total?Math.round(count/total*100):0;
+      return`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>${reason}</span><span style="color:#e8c547;font-family:var(--mono)">${count} (${p}%)</span></div><div style="background:var(--border);border-radius:3px;height:4px"><div style="width:${p}%;height:100%;background:#e8c547;border-radius:3px"></div></div></div>`;
+    }).join('');
+}
+
+function opsToggle(name){
+  const body=document.getElementById('ops-'+name+'-body');
+  const arrow=document.getElementById('ops-'+name+'-arrow');
+  if(!body)return;
+  const open=body.style.display==='block';
+  body.style.display=open?'none':'block';
+  if(arrow) arrow.style.transform=open?'':'rotate(180deg)';
+}
+
+// Store Shopify returns for order adjustment
+let _shopifyGross=0;
+
 </script>
 
 </body>
